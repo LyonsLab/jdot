@@ -38,10 +38,10 @@ function rectangle(x, y, width, height) {
         if (that.dataType === "line") return this._intersectsLine(that);
         if (that.dataType === "point") return this._containsPoint(that);
 
-        return !(that.left > (this.left + this.width) ||
-                 (that.left + that.width) < this.left ||
+        return !(that.x > (this.x + this.width) ||
+                 (that.x + that.width) < this.x ||
                  that.y > (this.y + this.height) ||
-                 (that.y + that.height) < this.x);
+                 (that.y + that.height) < this.y);
     };
 
     this._intersectsLine = function(line) {
@@ -144,13 +144,7 @@ function quadtree(boundary, level) {
         var points = [];
         if (!this.boundary.intersects(boundingBox)) return points;
 
-        if (boundingBox.contains(this.boundary)) {
-            points = this.points.slice(0);
-        } else {
-            this.points.forEach(function(point) {
-                if (boundingBox.intersects(point)) points.push(point);
-            });
-        }
+        points = this.points.slice(0);
 
         if (this.northWest === undefined) return points;
 
@@ -175,16 +169,10 @@ function quadtree(boundary, level) {
             (bpPerPixelWidth >= 1) &&
             (bpPerPixelHeight >= 1)) {
 
-            return [this.boundary];
+            return { x: this.boundary.x, y: this.bondary.y };
         }
 
-        if (boundingBox.contains(this.boundary)) {
-            points = this.points.slice(0);
-        } else {
-            this.points.forEach(function(point) {
-                if (boundingBox.intersects(point)) points.push(point);
-            });
-        }
+        points = this.points.slice(0);
 
         if (this.northWest === undefined) return points;
 
