@@ -1,0 +1,22 @@
+{
+    "boss": true,
+    "curly": false,
+    "eqeqeq": true,
+    "eqnull": true,
+    "expr": true,
+    "immed": true,
+    "noarg": true,
+    "onevar": false,
+    "quotmark": "double",
+    "smarttabs": true,
+    "trailing": true,
+    "laxbreak": true,
+    "sub": true,
+    "browser": true,
+    "globals": {
+        "quadtree": true,
+        "bioplot": true,
+        "ns": true,
+        "d3" : true
+    }
+}
