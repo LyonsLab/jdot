@@ -126,7 +126,9 @@ function quadtree(boundary, level) {
 
         if (this.northWest === undefined && this.level <= MAX_LEVELS) {
             this._split();
+        }
 
+        if (this.northWest !== undefined) {
             if (this.northWest.insert(data)) return true;
             if (this.northEast.insert(data)) return true;
             if (this.southWest.insert(data)) return true;
@@ -152,7 +154,8 @@ function quadtree(boundary, level) {
 
         if (this.northWest === undefined) return points;
 
-        points = concat.call(points, this.northWest.query(boundingBox),
+        points = concat.call(points,
+            this.northWest.query(boundingBox),
             this.northEast.query(boundingBox),
             this.southWest.query(boundingBox),
             this.southEast.query(boundingBox));
