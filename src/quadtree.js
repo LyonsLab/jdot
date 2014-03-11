@@ -85,6 +85,10 @@ function rectangle(x, y, width, height) {
     };
 }
 
+function QuadTree(width, height) {
+	return new quadtree(new rectangle(0, 0, width, height));
+}
+
 function quadtree(boundary, level) {
     this.capacity = 10;
     this.level = level || 0;
@@ -169,7 +173,7 @@ function quadtree(boundary, level) {
             (bpPerPixelWidth >= 1) &&
             (bpPerPixelHeight >= 1)) {
 
-            return { x: this.boundary.x, y: this.bondary.y };
+            return { x: this.boundary.x, y: this.boundary.y };
         }
 
         points = this.points.slice(0);
