@@ -142,7 +142,13 @@ function quadtree(boundary, level) {
         var points = [];
         if (!this.boundary.intersects(boundingBox)) return points;
 
-        points = this.points.slice(0);
+        if (boundingBox.contains(this.boundary)) {
+            points = this.points.slice(0);
+        } else {
+            this.points.forEach(function(point) {
+                if (boundingBox.intersects(point)) points.push(point);
+            });
+        }
 
         if (this.northWest === undefined) return points;
 
@@ -169,7 +175,13 @@ function quadtree(boundary, level) {
             return [this.boundary];
         }
 
-        points = this.points.slice(0);
+        if (boundingBox.contains(this.boundary)) {
+            points = this.points.slice(0);
+        } else {
+            this.points.forEach(function(point) {
+                if (boundingBox.intersects(point)) points.push(point);
+            });
+        }
 
         if (this.northWest === undefined) return points;
 
