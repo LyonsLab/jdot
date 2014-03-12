@@ -11,7 +11,7 @@ module.exports = function(grunt) {
                 }
             },
             tests: {
-                src: "src/tests/**/*.js",
+                src: "src/test/**/*.js"
             },
             grunt: {
                 src: "Gruntfile.js"
@@ -59,10 +59,6 @@ module.exports = function(grunt) {
                     livereload: true,
                 },
                 tasks: ["build"]
-            },
-            karma: {
-                files: ["<%= jshint.source.src", "test/**/*.js"],
-                tasks: ["karma:unit:run"]
             }
         },
         open: {
@@ -77,7 +73,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-uglify");
 
-    grunt.loadNpmTasks("grunt-karma");
     grunt.loadNpmTasks("grunt-express");
     grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.loadNpmTasks("grunt-open");
