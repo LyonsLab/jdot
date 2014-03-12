@@ -190,8 +190,15 @@ function quadtree(boundary, level) {
 //            return [ { x: this.boundary.x, y: this.boundary.y } ];
 //        }
         
-        if (((this.boundary.width / boundingBox.width) <= (boundingBox.width / pxWidth)) &&
-                ((this.boundary.height / boundingBox.height) <= (boundingBox.height / pxHeight))) {
+//        if (((this.boundary.width / boundingBox.width) <= (boundingBox.width / pxWidth)) &&
+//                ((this.boundary.height / boundingBox.height) <= (boundingBox.height / pxHeight))) {
+//            	//console.log('query_with_density ' + boundingBox.toString() + ' ' + this.boundary.toString());
+//                return [ { x: this.boundary.x, y: this.boundary.y, color: 'red' } ];
+//        }
+        
+        if (this.boundary.width <= (boundingBox.width / pxWidth) &&
+            this.boundary.height <= (boundingBox.height / pxHeight)) 
+        {
             	//console.log('query_with_density ' + boundingBox.toString() + ' ' + this.boundary.toString());
                 return [ { x: this.boundary.x, y: this.boundary.y, color: 'red' } ];
         }
