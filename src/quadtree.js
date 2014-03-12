@@ -8,6 +8,10 @@ function rectangle(x, y, width, height) {
     this.width = width;
     this.height = height;
 
+    this.toString = function() {
+        return "[x=" + this.x  + ", y=" + this.y + ", width=" + this.width + ", height=" + this.height + "]";
+    };
+    
     this.contains = function(that) {
         if (that.dataType === "line") return this._containsLine(that);
         if (that.dataType === "point") return this._containsPoint(that);
@@ -28,10 +32,6 @@ function rectangle(x, y, width, height) {
                 point.y >= this.y &&
                 point.x <= (this.x + this.width) &&
                 point.y <= (this.y + this.height));
-    };
-
-    this.toString = function() {
-        return "[x=" + this.x  + ", y=" + this.y + ", width=" + this.width + ", height=" + this.height + "]";
     };
 
     this.intersects = function(that) {
@@ -89,13 +89,14 @@ function QuadTree(width, height) {
 	return new quadtree(new rectangle(0, 0, width, height));
 }
 
+var MAX_DEPTH = 10;
+var maxDepth = MAX_DEPTH;
+
 function quadtree(boundary, level) {
-    this.capacity = 10;
     this.level = level || 0;
     this.boundary = boundary;
     this.points = [];
-    var concat = Array.prototype.concat,
-        MAX_LEVELS = 10;
+    var concat = Array.prototype.concat;
 
     this._split = function() {
         var width = parseInt(this.boundary.width / 2),
@@ -105,11 +106,13 @@ function quadtree(boundary, level) {
             y = this.boundary.y,
             x2 = x + width,
             y2 = y + height;
+        
+        //console.log('split width='+width+' height='+height);
 
-        this.northWest = new quadtree(new rectangle(x, y2, width, height), l);
-        this.northEast = new quadtree(new rectangle(x2, y2, width, height), l);
-        this.southEast = new quadtree(new rectangle(x2, y, width, height), l);
-        this.southWest = new quadtree(new rectangle(x, y, width, height), l);
+        this.northWest = new quadtree(new rectangle(x,  y, width, height), l);
+        this.northEast = new quadtree(new rectangle(x2, y, width, height), l);
+        this.southEast = new quadtree(new rectangle(x2, y2,  width, height), l);
+        this.southWest = new quadtree(new rectangle(x,  y2,  width, height), l);
     };
 
     this.clear = function() {
@@ -125,24 +128,37 @@ function quadtree(boundary, level) {
         this.points.length = 0;
     };
 
-    this.insert = function(data) {
+    this.insertItem = function(data) {
         if (!this.boundary.contains(data)) return false;
 
-        if (this.northWest === undefined && this.level <= MAX_LEVELS) {
+        if (this.northWest === undefined && this.level <= maxDepth-1) {
             this._split();
         }
 
         if (this.northWest !== undefined) {
-            if (this.northWest.insert(data)) return true;
-            if (this.northEast.insert(data)) return true;
-            if (this.southWest.insert(data)) return true;
-            if (this.southEast.insert(data)) return true;
+            if (this.northWest.insertItem(data)) return true;
+            if (this.northEast.insertItem(data)) return true;
+            if (this.southEast.insertItem(data)) return true;
+            if (this.southWest.insertItem(data)) return true;
         }
 
+        //console.log('insertItem x='+data.x+' y='+data.y);
         this.points.push(data);
 
         return true;
     };
+    
+    this.insert = function(data) {
+    	//maxDepth = Math.min( MAX_DEPTH );
+    	console.log('insert maxDepth=' + maxDepth + ' data.length=' + data.length);
+    	
+    	for (var i = 0;  i < data.length;  i++) {
+    		if (!this.insertItem(data[i]))
+    			return false;
+    	}
+
+        return true;
+    };    
 
     this.query = function(boundingBox) {
         var points = [];
@@ -162,24 +178,27 @@ function quadtree(boundary, level) {
     };
 
     this.query_with_density = function(boundingBox, pxWidth, pxHeight) {
-        var points = [],
-            bpPerPixelHeight = boundingBox.width / pxWidth,
-            bpPerPixelWidth = boundingBox.height / pxHeight;
+        var points = [];
 
         if (!this.boundary.intersects(boundingBox)) return points;
 
-        if ((this.boundary.width <= bpPerPixelWidth) &&
-            (this.boundary.height <= bpPerPixelHeight) &&
-            (bpPerPixelWidth >= 1) &&
-            (bpPerPixelHeight >= 1)) {
-
-            return { x: this.boundary.x, y: this.boundary.y };
+//        if ((this.boundary.width <= bpPerPixelWidth) &&
+//            (this.boundary.height <= bpPerPixelHeight) &&
+//            (bpPerPixelWidth >= 1) &&
+//            (bpPerPixelHeight >= 1)) {
+//
+//            return [ { x: this.boundary.x, y: this.boundary.y } ];
+//        }
+        
+        if (((this.boundary.width / boundingBox.width) <= (boundingBox.width / pxWidth)) &&
+                ((this.boundary.height / boundingBox.height) <= (boundingBox.height / pxHeight))) {
+            	//console.log('query_with_density ' + boundingBox.toString() + ' ' + this.boundary.toString());
+                return [ { x: this.boundary.x, y: this.boundary.y, color: 'red' } ];
         }
-
+        
         points = this.points.slice(0);
 
         if (this.northWest === undefined) return points;
-
 
         points = concat.call(points,
             this.northWest.query_with_density(boundingBox, pxWidth, pxHeight),

@@ -39,7 +39,7 @@ function DotPlot(element, config) {
     	}
      	
      	// Draw frame around canvas
-     	this.context.lineWidth = 1000;
+     	this.context.lineWidth = 2000;
      	this.context.strokeRect( 0, 0, this.config.extent.width-1, this.config.extent.height-1 );
     }
     
@@ -103,7 +103,6 @@ function DotPlot(element, config) {
         this.yscale = newYScale;
         this.view.width = this.config.size.width / this.xscale;
         this.view.height = this.config.size.height / this.yscale;
-        console.log(this.view.width + ' ' + this.view.height)
         
         // Check bounds - FIXME: can this be rewritten to use translate() ...?
         if (tx < 0)
@@ -115,7 +114,7 @@ function DotPlot(element, config) {
         else if (ty + this.view.height >= this.config.extent.height)
         	ty = this.config.extent.height - this.view.height;
         
-        console.log('zoom wheel='+wheel+' xzoom='+xzoom+' yzoom='+yzoom+' xscale='+this.xscale + ' yscale=' + this.yscale + ' trans=' + tx + ',' + ty + ' origin=' + this.origin.x + ',' + this.origin.y)
+        //console.log('zoom wheel='+wheel+' xzoom='+xzoom+' yzoom='+yzoom+' xscale='+this.xscale + ' yscale=' + this.yscale + ' trans=' + tx + ',' + ty + ' origin=' + this.origin.x + ',' + this.origin.y)
         
         // Zoom
         this.context.translate( this.origin.x, this.origin.y );

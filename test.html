@@ -17,8 +17,8 @@ Oops ... your web browser does not support HTML5!
 <script src="src/dotplot2.js"></script>
 <script src="src/quadtree.js"></script>
 <script>
-var initData = init_array;//init_qt;//init_array;
-var fetchData = fetch_array;//fetch_qt;//fetch_array;
+var initData = init_qt;//init_array;
+var fetchData = fetch_qt;//fetch_array;
 
 var gu1 = 2*1000*1000;
 var gu2 = 3*1000*1000;
@@ -30,7 +30,7 @@ dp.setFetch(fetchData);
 var qt = QuadTree(gu1, gu2);
 
 var data;
-setPoints(100*1000);
+setPoints(1*1000);
 
 canvas.onmousewheel = function(e) { dp.onmousewheel(e); };
 canvas.onmousedown  = function(e) { dp.onmousedown(e);  };
@@ -45,8 +45,8 @@ function init_qt(n) {
     
     // Generate some random data points
     for (var i=0; i < n; i++) {
-        var x = Math.random() * gu1;//dp.config.size.width;
-        var y = Math.random() * gu2;//dp.config.size.height;
+        var x = Math.floor( Math.random() * gu1 );//dp.config.size.width;
+        var y = Math.floor( Math.random() * gu2 );//dp.config.size.height;
         data.push({ x: x, y: y, dataType: 'point' });
     }
     
@@ -54,8 +54,7 @@ function init_qt(n) {
 }
 
 function fetch_qt(x, y, width, height) {
-    //var subset = qt.query_with_density( new rectangle(Math.ceil(x), Math.ceil(y), Math.ceil(width), Math.ceil(height)), canvas.width, canvas.height );
-    var subset = qt.query( new rectangle(Math.ceil(x), Math.ceil(y), Math.ceil(width), Math.ceil(height)));
+    var subset = qt.query_with_density( new rectangle(x, y, width, height), 500, 500);//qt.query_with_density
     console.log('fetch: ' + subset.length + ' ' + x + ' ' + y + ' ' + width + ' '  + height);
     //console.log(subset);
     return subset;
