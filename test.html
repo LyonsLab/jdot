@@ -1,43 +1,151 @@
 <html>
 <body>
 
-<canvas id="view">
-Oops ... your web browser does not support HTML5!
-</canvas>
-
 <div>
+	<canvas id="view">Oops ... your web browser does not support HTML5!</canvas>
+	<canvas id="xaxis"></canvas>
+	<canvas id="yaxis"></canvas>
+</div>
+
+<div style='position:absolute;top:600px'>
     Number of points: <input id='num_points' size='15'>
     <button onclick='setPoints();'>Run</button><br>
     <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
-</div>
-<div>
+    <br>
     Use the mouse scroll to zoom and the arrow keys / drag mouse to move (when zoomed in).
 </div>
+
 
 <script src="src/dotplot2.js"></script>
 <script src="src/quadtree.js"></script>
 <script>
-var initData = init_qt;//init_array;
-var fetchData = fetch_qt;//fetch_array;
+var initData = init_array;
+var fetchData = fetch_array;
 
 var gu1 = 2*1000*1000;
 var gu2 = 3*1000*1000;
+var chromosomes1 = [ 
+    { name: '1', length: 100000 },
+    { name: '2', length: 200000 },
+    { name: '3', length: 300000 },
+    { name: '4', length: 1400000 }
+];
+var chromosomes2 = [ 
+    { name: 'a', length: 200000 },
+    { name: 'b', length: 250000 },
+    { name: 'c', length: 350000 },
+    { name: 'd', length: 2200000 }
+];
 
-var canvas = document.getElementById('view');
-var dp = new DotPlot(canvas, { size: { width: 500, height: 500 }, extent: { width: gu1, height: gu2 } });
+var view = document.getElementById('view');
+view.width = "500";
+view.height = "500";
+view.style.left = "50px";
+view.style.top = "50px";
+view.style.position = "absolute";
+
+var xaxis = document.getElementById('xaxis');
+xaxis.width = "500";
+xaxis.height = "50";
+xaxis.style.left = "50px";
+xaxis.style.top = "0px";
+xaxis.style.position = "absolute";
+
+var yaxis = document.getElementById('yaxis');
+yaxis.width = "10";
+yaxis.height = "500";
+yaxis.style.left = "0px";
+yaxis.style.top = "50px";
+yaxis.style.position = "absolute";
+
+var dp = new DotPlot(view, 
+	chromosomes1, chromosomes2, 
+	{   size: { width: 500, height: 500 }, 
+	    extent: { width: gu1, height: gu2 } 
+	}
+);
 dp.setFetch(fetchData);
+
+var xrule = new Rule(
+	xaxis, 
+	{   size: { width: 500, height: 50 }, 
+	    extent: gu1, 
+		orientation: 'horizontal',
+		labels: chromosomes1
+    }
+);
+xrule.draw();
+
+/* var yrule = new Rule(
+    yaxis, 
+    {   size: { width: 500, height: 50 }, 
+        extent: gu1, 
+        orientation: 'horizontal',
+        labels: chromosomes1
+    }
+);
+yrule.draw(); */
 
 var qt = QuadTree(gu1, gu2);
 
 var data;
-setPoints(1*1000);
+setPoints(100*1000);
 
-canvas.onmousewheel = function(e) { dp.onmousewheel(e); };
-canvas.onmousedown  = function(e) { dp.onmousedown(e);  };
-canvas.onmouseup    = function(e) { dp.onmouseup(e);    };
-canvas.onmousemove  = function(e) { dp.onmousemove(e);  };
+view.onmousewheel = onmousewheel;
+view.onmousedown  = onmousedown;
+view.onmouseup    = onmouseup;
+view.onmousemove  = onmousemove;
 
+xaxis.onmousewheel = onmousewheel;
+xaxis.onmousedown  = onmousedown;
+xaxis.onmouseup    = onmouseup;
+xaxis.onmousemove  = onmousemove;
+	
 //------------------------------------------------------------------------------
+function onmousewheel(e) {
+    var axis;
+    if (e.target.id == 'xaxis') {
+        axis = 'x';
+    }
+    else if (e.target.id == 'yaxis') {
+        axis = 'y';
+    }
+    dp.onmousewheel(e, axis);
+    xrule.onmousewheel(e);
+}
+
+function onmousedown(e) {
+    dp.onmousedown(e);
+    xrule.onmousedown(e);
+}
+
+function onmouseup(e) {
+    dp.onmouseup(e);
+    xrule.onmouseup(e);
+}
+
+function onmousemove(e) {
+	if (e.shiftKey && dp.mouse.isDown) {
+        var mousex = e.clientX - dp.element.offsetLeft;
+        var mousey = e.clientY - dp.element.offsetTop;
+		var width = e.x - dp.mouse.drag.offset.x;
+		var height = e.y - dp.mouse.drag.offset.y;
+		console.log(mousex + ' ' + dp.mouse.drag.offset.x + ' ' + width);
+		dp.select(dp.mouse.drag.offset.x- dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+	}
+	else {
+		var axis;
+		if (e.target.id == 'xaxis') {
+			axis = 'x';
+		}
+		else if (e.target.id == 'yaxis') {
+            axis = 'y';
+        }
+		dp.onmousemove(e, axis);
+		xrule.onmousemove(e);
+	}
+}
+
 function init_qt(n) {
 	console.log('init_qt ' + n);
     qt.clear();
