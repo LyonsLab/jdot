@@ -76,15 +76,15 @@ var xrule = new Rule(
 );
 xrule.draw();
 
-/* var yrule = new Rule(
+var yrule = new Rule(
     yaxis, 
-    {   size: { width: 500, height: 50 }, 
-        extent: gu1, 
-        orientation: 'horizontal',
-        labels: chromosomes1
+    {   size: { width: 50, height: 500 }, 
+        extent: gu2, 
+        orientation: 'vertical',
+        labels: chromosomes2
     }
 );
-yrule.draw(); */
+yrule.draw();
 
 var qt = QuadTree(gu1, gu2);
 
@@ -100,28 +100,40 @@ xaxis.onmousewheel = onmousewheel;
 xaxis.onmousedown  = onmousedown;
 xaxis.onmouseup    = onmouseup;
 xaxis.onmousemove  = onmousemove;
+
+yaxis.onmousewheel = onmousewheel;
+yaxis.onmousedown  = onmousedown;
+yaxis.onmouseup    = onmouseup;
+yaxis.onmousemove  = onmousemove;
 	
 //------------------------------------------------------------------------------
 function onmousewheel(e) {
     var axis;
     if (e.target.id == 'xaxis') {
         axis = 'x';
+        xrule.onmousewheel(e);
     }
     else if (e.target.id == 'yaxis') {
         axis = 'y';
+        yrule.onmousewheel(e);
+    }
+    else {
+    	xrule.onmousewheel(e);
+    	yrule.onmousewheel(e);
     }
     dp.onmousewheel(e, axis);
-    xrule.onmousewheel(e);
 }
 
 function onmousedown(e) {
     dp.onmousedown(e);
     xrule.onmousedown(e);
+    yrule.onmousedown(e);
 }
 
 function onmouseup(e) {
     dp.onmouseup(e);
     xrule.onmouseup(e);
+    yrule.onmouseup(e);
 }
 
 function onmousemove(e) {
@@ -143,6 +155,7 @@ function onmousemove(e) {
         }
 		dp.onmousemove(e, axis);
 		xrule.onmousemove(e);
+		yrule.onmousemove(e);
 	}
 }
 

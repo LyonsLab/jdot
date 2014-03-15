@@ -12,9 +12,16 @@ function Rule(element, config) {
             height: 50
         };
         
-        this.config.orientation = this.config.orientation || 'horizontal';
         this.config.zoomSpeed = this.config.zoomSpeed || 1000;
         this.config.dragSpeed = this.config.dragSpeed || 10;
+        
+        this.config.orientation = this.config.orientation || 'horizontal';
+        if (this.config.orientation == 'horizontal') {
+        	this.length = this.config.size.width;
+        }
+        else {
+        	this.length = this.config.size.height;
+        }
         
         if (this.config.labels) {
         	this.labels = [];
@@ -30,23 +37,25 @@ function Rule(element, config) {
 	this.onmousewheel = function(e) {
         var mousex = e.clientX - this.element.offsetLeft;
         var mousey = e.clientY - this.element.offsetTop;
+        var mousePos = ( this.config.orientation == 'horizontal' ? mousex : mousey );
         var wheel = e.wheelDelta / this.config.zoomSpeed;
 
         // Calculate new scale and origin
         var zoom = Math.pow(1 + Math.abs(wheel)/2 , wheel > 0 ? 1 : -1);
 
-        var minScale = this.config.size.width / this.config.extent;
+        var minScale = this.length / this.config.extent;
         var newScale = this.scale * zoom;
         if (newScale < minScale) {
             newScale = minScale;
             zoom = newScale / this.scale;
         }
 
-        var tx = ( mousex / this.scale + this.origin - mousex / newScale );
+        var trans = ( mousePos / this.scale + this.origin - mousePos / newScale );
+        
 
         this.scale = newScale;
-        this.view = this.config.size.width / this.scale;
-        this.origin = tx;
+        this.view = this.length / this.scale;
+        this.origin = trans;
         
         // Check bounds
         if (this.origin < 0) {
@@ -57,7 +66,7 @@ function Rule(element, config) {
         	this.origin = this.config.extent - this.view;
         }
 
-        console.log("xaxis zoom wheel="+wheel+" zoom="+zoom+" scale="+this.scale + " trans=" + tx + " origin=" + this.origin + " view=" + this.view);
+        console.log("xaxis zoom wheel="+wheel+" zoom="+zoom+" scale="+this.scale + " trans=" + trans + " origin=" + this.origin + " view=" + this.view);
 
         // Redraw
         this.redraw();
@@ -115,23 +124,35 @@ function Rule(element, config) {
 		var tick = roundBase10(this.view/10);
 		var start = roundBase10(this.origin) + tick;
 		//console.log('tick='+tick+' origin='+this.origin+' start='+start);
-		for (var x = this.scale+int(tick*this.scale), pos = start;  x < this.config.size.width-tick*this.scale/2;  x += tick*this.scale, pos += tick) {
+		for (var x = this.scale+int(tick*this.scale), pos = start;  x < this.length-tick*this.scale/2;  x += tick*this.scale, pos += tick) {
 			//console.log('x=' + x + ' pos=' + pos + ' scale=' + this.scale);
-			ctx.beginPath();
-			ctx.moveTo(x, element.height-11);
-			ctx.lineTo(x, element.height);
-			ctx.stroke();
 			
-			drawText(ctx, toUnits(pos), x, element.height-13, { rotate: 45, font: '6pt Arial'});
+			if (this.config.orientation == 'horizontal') {
+				ctx.beginPath();
+				ctx.moveTo(x, element.height-11);
+				ctx.lineTo(x, element.height);
+				ctx.stroke();
+				drawText(ctx, toUnits(pos), x, element.height-13, { rotate: 45, font: '6pt Arial'});
+			}
+			else {
+				ctx.beginPath();
+				ctx.moveTo(element.width-11, x);
+				ctx.lineTo(element.width, x);
+				ctx.stroke();
+				drawText(ctx, toUnits(pos), element.width-32, x+20, { rotate: 45, font: '6pt Arial'});
+			}
 		}
 		
 		if (this.labels) {
 			for (var i = 0; i < this.labels.length; i++) {
 				var label = this.labels[i];
 				var x = int((label.pos-this.origin) * this.scale);
-				if (x >= 0 && x <= this.config.size.width) {
+				if (x >= 0 && x <= this.length) {
 					var x = int((label.pos-this.origin) * this.scale);
-					drawText(ctx, label.text, x, element.height-1, { center: true, rotate: 0, font: 'bold 12pt Arial'});
+					if (this.config.orientation == 'horizontal')
+						drawText(ctx, label.text, x, element.height-1, { align: 'center', rotate: 0, font: 'bold 12pt Arial'});
+					else
+						drawText(ctx, label.text, element.width-3, x, { align: 'right', rotate: 0, font: 'bold 12pt Arial'});
 				}
 			}
 		}
@@ -150,7 +171,7 @@ function Rule(element, config) {
 
     this.origin = 0;
     this.view = this.config.extent;
-    this.scale = this.config.size.width / this.config.extent;
+    this.scale = this.length / this.config.extent;
     
     this.mouse = {
         isDown: false,
@@ -457,9 +478,14 @@ function drawRect(context, x, y, width, height, alpha) {
 
 function drawText(context, text, x, y, options) {
 	context.save();
-	if (options && options.center) {
+	if (options && (options.align || options.valign)) {
 		var metrics = context.measureText(text);
-		x -= metrics.width/2; // center the text
+		if (options.align == 'center')
+			x -= metrics.width/2;
+		else if (options.align == 'right')
+			x -= metrics.width+1;
+		//if (options.valign == 'middle')
+		//	y -= metrics.height/2;
 	}
 	context.translate(x, y);
 	if (options && options.rotate)
