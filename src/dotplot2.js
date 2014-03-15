@@ -65,7 +65,7 @@ function Rule(element, config) {
         	this.origin = this.config.extent - this.view;
         }
 
-        console.log("xaxis zoom wheel="+wheel+" zoom="+zoom+" scale="+this.scale + " trans=" + trans + " origin=" + this.origin + " view=" + this.view);
+        //console.log("xaxis zoom wheel="+wheel+" zoom="+zoom+" scale="+this.scale + " trans=" + trans + " origin=" + this.origin + " view=" + this.view);
 
         // Redraw
         this.redraw();
@@ -118,40 +118,41 @@ function Rule(element, config) {
 	
 	this.draw = function() {
 		var ctx = this.context;
+		
+		// Draw ruler tick marks/labels
 		ctx.lineWidth = .2;
 		var tick = roundBase10(this.view/10);
-		var start = roundBase10(this.origin) + tick;
-		//console.log('tick='+tick+' origin='+this.origin+' start='+start);
-		for (var x = this.scale+int(tick*this.scale), pos = start;  x < this.length-tick*this.scale/2;  x += tick*this.scale, pos += tick) {
-			//console.log('x=' + x + ' pos=' + pos + ' scale=' + this.scale);
-			
-			// TODO optimize this code and rename 'x' to something else
+		var guStart = roundBase10(this.origin) + tick;
+		var pxStart = this.scale+int(tick*this.scale);
+		for (var pxPos = pxStart, guPos = guStart; pxPos < this.length-tick*this.scale/2; pxPos += tick*this.scale, guPos += tick) {
+			// TODO optimize this code
 			if (this.config.orientation == 'horizontal') {
 				ctx.beginPath();
-				ctx.moveTo(x, element.height-11);
-				ctx.lineTo(x, element.height);
+				ctx.moveTo(pxPos, element.height-11);
+				ctx.lineTo(pxPos, element.height);
 				ctx.stroke();
-				drawText(ctx, toUnits(pos), x, element.height-13, { rotate: 45, font: '6pt Arial'});
+				drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: '6pt Arial'});
 			}
 			else {
 				ctx.beginPath();
-				ctx.moveTo(element.width-11, x);
-				ctx.lineTo(element.width, x);
+				ctx.moveTo(element.width-11, pxPos);
+				ctx.lineTo(element.width, pxPos);
 				ctx.stroke();
-				drawText(ctx, toUnits(pos), element.width-32, x+20, { rotate: 45, font: '6pt Arial'});
+				drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: '6pt Arial'});
 			}
 		}
 		
+		// Draw chromosome labels
+		// TODO: keep label centered within chromosome as long as any part of chromosome is visible
 		if (this.labels) {
 			for (var i = 0; i < this.labels.length; i++) {
 				var label = this.labels[i];
-				var x = int((label.pos-this.origin) * this.scale);
-				if (x >= 0 && x <= this.length) {
-					var x = int((label.pos-this.origin) * this.scale);
+				var pxPos = int((label.pos-this.origin) * this.scale);
+				if (pxPos >= 0 && pxPos <= this.length) {
 					if (this.config.orientation == 'horizontal')
-						drawText(ctx, label.text, x, element.height-1, { align: 'center', rotate: 0, font: 'bold 12pt Arial'});
+						drawText(ctx, label.text, pxPos, element.height-1, { align: 'center', rotate: 0, font: 'bold 12pt Arial'});
 					else
-						drawText(ctx, label.text, element.width-3, x, { align: 'right', rotate: 0, font: 'bold 12pt Arial'});
+						drawText(ctx, label.text, element.width-3, pxPos+3, { align: 'right', rotate: 0, font: 'bold 12pt Arial'});
 				}
 			}
 		}
@@ -168,9 +169,9 @@ function Rule(element, config) {
     this.element.height = this.config.size.height;
 	this.context = element.getContext("2d");
 
-    this.origin = 0;
-    this.view = this.config.extent;
-    this.scale = this.length / this.config.extent;
+    this.origin = 0;  // gu
+    this.view = this.config.extent; // gu
+    this.scale = this.length / this.config.extent; // px/gu
     
     this.mouse = {
         isDown: false,
@@ -293,8 +294,33 @@ function DotPlot(element, chr1, chr2, config) {
         this.render();
     };
     
-    this.select = function(x, y, width, height) {
+    this.highlight = function(x, y, width, height) {
     	drawRect(this.context, x, y, width, height, 0.1);
+    }
+    
+    this.select = function(x, y, width, height) {
+    	var tx = x/this.xscale;
+    	var ty = y/this.yscale;
+    	this.view.width = width/this.xscale;
+    	this.view.height = height/this.yscale;
+
+    	var newXScale = this.config.size.width / this.view.width;
+    	var newYScale = this.config.size.height / this.view.height;
+    	var xzoom = newXScale / this.xscale;
+    	var yzoom = newYScale / this.yscale;
+    	
+    	this.xscale = newXScale;
+    	this.yscale = newYScale;
+    	
+    	this.context.translate( this.origin.x, this.origin.y );
+    	this.context.scale(xzoom, yzoom);
+    	this.context.translate(-tx, -ty);
+    	
+    	this.origin.x = tx;
+    	this.origin.y = ty;
+    	//console.log('select: '+x+','+y+','+width+','+height+' t='+tx+','+ty+' '+this.xscale+' '+this.yscale);
+    	
+    	this.redraw();
     }
 
     this.onmousewheel = function (e, axis) {
@@ -348,7 +374,7 @@ function DotPlot(element, chr1, chr2, config) {
         else if (ty + this.view.height >= this.config.extent.height)
             ty = this.config.extent.height - this.view.height;
 
-        console.log("dp zoom wheel="+wheel+" xzoom="+xzoom+" yzoom="+yzoom+" xscale="+this.xscale + " yscale=" + this.yscale + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y)
+        //console.log("dp zoom wheel="+wheel+" xzoom="+xzoom+" yzoom="+yzoom+" xscale="+this.xscale + " yscale=" + this.yscale + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y)
 
         // Zoom
         this.context.translate( this.origin.x, this.origin.y );
@@ -383,7 +409,7 @@ function DotPlot(element, chr1, chr2, config) {
         	tx = (e.x - this.mouse.drag.offset.x) / this.xscale / this.config.dragSpeed;
         if (!axis || axis == 'y')
         	ty = (e.y - this.mouse.drag.offset.y) / this.yscale / this.config.dragSpeed;
-        console.log("mousemove: e=" + e.x + "," + e.y + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y + " scale=" + this.scale);
+        //console.log("mousemove: e=" + e.x + "," + e.y + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y + " scale=" + this.scale);
 
         this.translate(tx, ty);
         this.redraw();
@@ -406,12 +432,12 @@ function DotPlot(element, chr1, chr2, config) {
     // TODO verify element is of type canvas
     this.context = element.getContext("2d");
 
-    this.xscale = this.config.size.width / this.config.extent.width;
-    this.yscale = this.config.size.height / this.config.extent.height;
+    this.xscale = this.config.size.width / this.config.extent.width; // px/gu
+    this.yscale = this.config.size.height / this.config.extent.height; // px/gu
     this.context.scale(this.xscale, this.yscale);
 
-    this.origin = { x: 0, y: 0 };
-    this.view = { width: this.config.extent.width, height: this.config.extent.height };
+    this.origin = { x: 0, y: 0 }; // gu
+    this.view = { width: this.config.extent.width, height: this.config.extent.height }; // gu
 
     this.mouse = {
         isDown: false,

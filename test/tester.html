@@ -131,7 +131,7 @@ function onmousemove(e) {
 		var width = e.x - dp.mouse.drag.offset.x;
 		var height = e.y - dp.mouse.drag.offset.y;
 		console.log(mousex + ' ' + dp.mouse.drag.offset.x + ' ' + width);
-		dp.select(dp.mouse.drag.offset.x- dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+		dp.highlight(dp.mouse.drag.offset.x- dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
 	}
 	else {
 		var axis;
@@ -158,6 +158,14 @@ function onmousedown(e) {
 }
 
 function onmouseup(e) {
+	if (e.shiftKey && dp.mouse.isDown) {
+		var mousex = e.clientX - dp.element.offsetLeft;
+        var mousey = e.clientY - dp.element.offsetTop;
+        var width = e.x - dp.mouse.drag.offset.x;
+        var height = e.y - dp.mouse.drag.offset.y;
+        //console.log(mousex + ' ' + dp.mouse.drag.offset.x + ' ' + width);
+		dp.select(dp.mouse.drag.offset.x- dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+	}
     dp.onmouseup(e);
     xrule.onmouseup(e);
     yrule.onmouseup(e);
