@@ -51,7 +51,6 @@ function Rule(element, config) {
         }
 
         var trans = ( mousePos / this.scale + this.origin - mousePos / newScale );
-        
 
         this.scale = newScale;
         this.view = this.length / this.scale;
@@ -73,7 +72,8 @@ function Rule(element, config) {
 	}
 	
     this.onmousedown = function(e) {
-        this.mouse.drag.offset = e.x;
+    	var mousePos = ( this.config.orientation == 'horizontal' ? e.x : e.y );
+        this.mouse.drag.offset = mousePos;
         this.mouse.isDown = true;
     };
 
@@ -86,20 +86,18 @@ function Rule(element, config) {
         if (!this.mouse.isDown) return;
         if (this.view == this.config.extent) return; // can't move, zoomed out all the way
 
-        var tx = (e.x - this.mouse.drag.offset) / this.scale / this.config.dragSpeed;
-        console.log("xaxis mousemove: e=" + e.x + " trans=" + tx + " origin=" + this.origin + " width=" + this.view + " scale=" + this.scale);
-
-        //console.log("translate: x,y=" + x + "," + y + " origin=" + origin.x + "," + origin.y + " scale=" + scale + " w,h=" + view.width + "," + view.height);
+        var mousePos = ( this.config.orientation == 'horizontal' ? e.x : e.y );
+        var trans = (mousePos - this.mouse.drag.offset) / this.scale / this.config.dragSpeed;
+        //console.log("xaxis mousemove: e=" + mousePos + " trans=" + trans + " origin=" + this.origin + " width=" + this.view + " scale=" + this.scale);
 
         // Check bounds
-        if (this.origin - tx < 0)
-            tx = this.origin;
-        else if (this.origin + this.view - tx >= this.config.extent)
-            tx = this.origin + this.view - this.config.extent;
+        if (this.origin - trans < 0)
+        	trans = this.origin;
+        else if (this.origin + this.view - trans >= this.config.extent)
+        	trans = this.origin + this.view - this.config.extent;
 
         // Translate
-        //this.context.translate( tx, 0 );
-        this.origin -= tx;
+        this.origin -= trans;
         
         this.redraw();
     }	
@@ -127,6 +125,7 @@ function Rule(element, config) {
 		for (var x = this.scale+int(tick*this.scale), pos = start;  x < this.length-tick*this.scale/2;  x += tick*this.scale, pos += tick) {
 			//console.log('x=' + x + ' pos=' + pos + ' scale=' + this.scale);
 			
+			// TODO optimize this code and rename 'x' to something else
 			if (this.config.orientation == 'horizontal') {
 				ctx.beginPath();
 				ctx.moveTo(x, element.height-11);
@@ -494,4 +493,47 @@ function drawText(context, text, x, y, options) {
 		context.font = options.font;
 	context.fillText(text, 0, 0);
 	context.restore();
+}
+
+/**
+* Source: http://www.rgraph.net/blog/2013/january/measuring-text-height-with-html5-canvas.html
+* Measures text by creating a DIV in the document and adding the relevant text to it.
+* Then checking the .offsetWidth and .offsetHeight. Because adding elements to the DOM is not particularly
+* efficient in animations (particularly) it caches the measured text width/height.
+* 
+* @param  string text   The text to measure
+* @param  bool   bold   Whether the text is bold or not
+* @param  string font   The font to use
+* @param  size   number The size of the text (in pts)
+* @return array         A two element array of the width and height of the text
+*/
+function measureText(text, bold, font, size)
+{
+    // This global variable is used to cache repeated calls with the same arguments
+    var str = text + ':' + bold + ':' + font + ':' + size;
+    if (typeof(__measuretext_cache__) == 'object' && __measuretext_cache__[str]) {
+        return __measuretext_cache__[str];
+    }
+
+    var div = document.createElement('DIV');
+        div.innerHTML = text;
+        div.style.position = 'absolute';
+        div.style.top = '-100px';
+        div.style.left = '-100px';
+        div.style.fontFamily = font;
+        div.style.fontWeight = bold ? 'bold' : 'normal';
+        div.style.fontSize = size + 'pt';
+    document.body.appendChild(div);
+    
+    var size = [div.offsetWidth, div.offsetHeight];
+
+    document.body.removeChild(div);
+    
+    // Add the sizes to the cache as adding DOM elements is costly and can cause slow downs
+    if (typeof(__measuretext_cache__) != 'object') {
+        __measuretext_cache__ = [];
+    }
+    __measuretext_cache__[str] = size;
+    
+    return size;
 }
