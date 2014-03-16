@@ -125,46 +125,98 @@ function onmousewheel(e) {
 }
 
 function onmousemove(e) {
-	if (e.shiftKey && dp.mouse.isDown) {
-        var mousex = e.clientX - dp.element.offsetLeft;
-        var mousey = e.clientY - dp.element.offsetTop;
-		var width = e.x - dp.mouse.drag.offset.x;
-		var height = e.y - dp.mouse.drag.offset.y;
-		console.log(mousex + ' ' + dp.mouse.drag.offset.x + ' ' + width);
-		dp.highlight(dp.mouse.drag.offset.x- dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+	if (e.shiftKey) {
+	    if (e.target.id == 'xaxis' && xrule.mouse.isDown) {
+	    	var mousex = e.clientX - xrule.element.offsetLeft;
+            var mousey = e.clientY - xrule.element.offsetTop;
+            var width = e.x - xrule.mouse.drag.offset.x;
+            var height = e.y - xrule.mouse.drag.offset.y;
+            xrule.highlight(xrule.mouse.drag.offset.x - xrule.element.offsetLeft, xrule.mouse.drag.offset.y - xrule.element.offsetTop, width, height);
+	    }
+	    else if (e.target.id == 'yaxis' && yrule.mouse.isDown) {
+            var mousex = e.clientX - yrule.element.offsetLeft;
+            var mousey = e.clientY - yrule.element.offsetTop;
+            var width = e.x - yrule.mouse.drag.offset.x;
+            var height = e.y - yrule.mouse.drag.offset.y;
+            yrule.highlight(yrule.mouse.drag.offset.x - yrule.element.offsetLeft, yrule.mouse.drag.offset.y - yrule.element.offsetTop, width, height);
+	    }
+	    else if (e.target.id == 'view' && dp.mouse.isDown) {
+            var mousex = e.clientX - dp.element.offsetLeft;
+            var mousey = e.clientY - dp.element.offsetTop;
+    		var width = e.x - dp.mouse.drag.offset.x;
+    		var height = e.y - dp.mouse.drag.offset.y;
+    		dp.highlight(dp.mouse.drag.offset.x - dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+	    }
 	}
 	else {
 		var axis;
 		if (e.target.id == 'xaxis') {
 			axis = 'x';
 			xrule.onmousemove(e);
+			dp.onmousemove(e, axis);
 		}
 		else if (e.target.id == 'yaxis') {
             axis = 'y';
             yrule.onmousemove(e);
+            dp.onmousemove(e, axis);
         }
-		else {
+		else if (e.target.id == 'view') {
 		    xrule.onmousemove(e);
 		    yrule.onmousemove(e);
+		    dp.onmousemove(e);
 		}
-		dp.onmousemove(e, axis);
 	}
 }
 
 function onmousedown(e) {
-    dp.onmousedown(e);
-    xrule.onmousedown(e);
-    yrule.onmousedown(e);
+	if (e.target.id == 'xaxis') {
+		xrule.onmousedown(e);
+		dp.onmousedown(e);
+	}
+	else if (e.target.id == 'yaxis') {
+		yrule.onmousedown(e);
+		dp.onmousedown(e);
+	}
+	else if (e.target.id == 'view') {
+		xrule.onmousedown(e);
+		yrule.onmousedown(e);
+	    dp.onmousedown(e);
+	}
 }
 
 function onmouseup(e) {
-	if (e.shiftKey && dp.mouse.isDown) {
-		var mousex = e.clientX - dp.element.offsetLeft;
-        var mousey = e.clientY - dp.element.offsetTop;
-        var width = e.x - dp.mouse.drag.offset.x;
-        var height = e.y - dp.mouse.drag.offset.y;
-        //console.log(mousex + ' ' + dp.mouse.drag.offset.x + ' ' + width);
-		dp.select(dp.mouse.drag.offset.x- dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+	if (e.shiftKey) {
+		if (e.target.id == 'xaxis' && xrule.mouse.isDown) {
+            var mousex = e.clientX - xrule.element.offsetLeft;
+            var mousey = e.clientY - xrule.element.offsetTop;
+            var width = e.x - xrule.mouse.drag.offset.x;
+            var height = e.y - xrule.mouse.drag.offset.y;
+            var x = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
+            var y = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
+            xrule.select(x, y, width, height);
+            dp.select(x, 0, width, dp.element.height);
+		}
+		else if (e.target.id == 'yaxis' && yrule.mouse.isDown) {
+            var mousex = e.clientX - yrule.element.offsetLeft;
+            var mousey = e.clientY - yrule.element.offsetTop;
+            var width = e.x - yrule.mouse.drag.offset.x;
+            var height = e.y - yrule.mouse.drag.offset.y;
+            var x = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
+            var y = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
+            yrule.select(x, y, width, height);
+            dp.select(0, y, dp.element.width, height);
+	    }
+		else if (e.target.id == 'view' && dp.mouse.isDown) {
+    		var mousex = e.clientX - dp.element.offsetLeft;
+            var mousey = e.clientY - dp.element.offsetTop;
+            var width = e.x - dp.mouse.drag.offset.x;
+            var height = e.y - dp.mouse.drag.offset.y;
+            var x = dp.mouse.drag.offset.x - dp.element.offsetLeft;
+            var y = dp.mouse.drag.offset.y - dp.element.offsetTop;
+            xrule.select(x, y, width, height);
+            yrule.select(x, y, width, height);
+    		dp.select(x, y, width, height);
+		}
 	}
     dp.onmouseup(e);
     xrule.onmouseup(e);
@@ -224,6 +276,7 @@ function toggleType() {
 }
 
 document.onkeydown = function(e) {
+	console.log('keydown');
     switch(e.keyCode) {
         case 37: dp.translate( 5,  0 ); break; // left
         case 38: dp.translate( 0,  5 ); break; // up
