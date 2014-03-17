@@ -244,24 +244,16 @@ function DotPlot(element, chr1, chr2, config) {
     
     this.drawChromosomes = function() { //FIXME: use drawRect() instead
     	var ctx = this.context;
-        //ctx.globalAlpha = this.view.width * this.xscale;
         //ctx.imageSmoothingEnabled = false;
-        ctx.lineWidth = 1 / this.yscale / 2; // same size regardless of zoom
-        //console.log('view.width='+this.view.width + ' xscale=' + this.xscale + ' ' + ' lineWidth=' + ctx.lineWidth + ' alpha=' + ctx.globalAlpha);
+        ctx.lineWidth = 1 / this.xscale; // same size regardless of zoom
         for (var i = 0, x = 0; i < this.chr1.length-1; i++) {
         	x += this.chr1[i].length;
-			ctx.beginPath();
-			ctx.moveTo(x, 0);
-			ctx.lineTo(x, this.config.extent.height-1);
-			ctx.stroke();
+        	drawLine(ctx, x, 1, x, this.config.extent.height-1);
         }
-        ctx.lineWidth = 1 / this.xscale / 2; // same size regardless of zoom
+        ctx.lineWidth = 1 / this.yscale; // same size regardless of zoom
         for (var i = 0, y = 0; i < this.chr2.length-1; i++) {
         	y += this.chr2[i].length;
-        	ctx.beginPath();
-        	ctx.moveTo(0, y);
-        	ctx.lineTo(this.config.extent.width-1, y);
-        	ctx.stroke();
+        	drawLine(ctx, 1, y, this.config.extent.width-1, y);
         }
     }
     
@@ -269,15 +261,11 @@ function DotPlot(element, chr1, chr2, config) {
     	if (!data) return;
     	
     	var ctx = this.context;
-//      ctx.lineWidth = 20;
-        ctx.globalAlpha = 1;
         for (var i = 0; i < data.length; i++) {
-//            if (data[i].color) {
+//            if (data[i].color)
 //                this.context.fillStyle = data[i].color;
-//            }
-//            else {
+//            else
 //                this.context.fillStyle = "black";
-//            }
             var x = data[i].x;
             var y = data[i].y;
             ctx.fillRect( x, y, 1000, 1000 );
@@ -290,21 +278,22 @@ function DotPlot(element, chr1, chr2, config) {
     
     this.drawBorder = function() {
         // Draw frame around canvas
-    	var ctx = this.context;
-        ctx.lineWidth = 1 / Math.min(this.xscale, this.yscale); // same size regardless of zoom
-        ctx.strokeRect( 0, 0, this.config.extent.width-1, this.config.extent.height-1 );
+    	drawScaledRect(this.context, 0, 0, this.config.extent.width, this.config.extent.height, this.xscale, this.yscale);
     }
     
     this.render = function() {
     	if (!this.fetch) return;
+
+    	var startTime = Date.now();
     	
         var data = this.fetch(this.origin.x, this.origin.y,
                 			  this.view.width, this.view.height );
-        var ctx = this.context;
         
         this.drawChromosomes();
         this.drawDots();
         this.drawBorder();
+        
+        console.log('render time: ' + (Date.now() - startTime));
     };
     
     this.translate = function translate(x, y) {
@@ -523,6 +512,25 @@ function roundBase10(n) {
 
 function int(floatvalue) {
 	return Math.floor( floatvalue );
+}
+
+function drawLine(context, x1, y1, x2, y2, lineWidth) {
+	if (lineWidth)
+		context.lineWidth = lineWidth;
+	context.beginPath();
+	context.moveTo(x1, y1);
+	context.lineTo(x2, y2);
+	context.stroke();
+	console.log(context);
+}
+
+function drawScaledRect(context, x1, y1, x2, y2, xscale, yscale) {
+	context.lineWidth = 1 / xscale; // same size regardless of zoom
+	drawLine(context, x1, y1, x2, y1);
+	drawLine(context, x1, y2, x2, y2);
+	context.lineWidth = 1 / yscale; // same size regardless of zoom
+	drawLine(context, x1, y1+1, x1, y2-1);
+	drawLine(context, x2, y1+1, x2, y2-1);
 }
 
 function drawRect(context, x, y, width, height, alpha) {
