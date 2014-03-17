@@ -37,6 +37,10 @@ var chromosomes2 = [
     { name: 'd', length: 2200000 }
 ];
 
+var maxTiles = 100;
+var tileColSize = Math.floor(gu1/maxTiles);
+var tileRowSize = Math.floor(gu2/maxTiles);
+
 var view = document.getElementById('view');
 view.width = "500";
 view.height = "500";
@@ -89,6 +93,7 @@ yrule.draw();
 //var qt = QuadTree(gu1, gu2);
 
 var data;
+var tiles;
 setPoints(100*1000);
 
 view.onmousewheel = onmousewheel;
@@ -100,6 +105,7 @@ xaxis.onmousewheel = onmousewheel;
 xaxis.onmousedown  = onmousedown;
 xaxis.onmouseup    = onmouseup;
 xaxis.onmousemove  = onmousemove;
+//xaxis.onclick      = onclick;
 
 yaxis.onmousewheel = onmousewheel;
 yaxis.onmousedown  = onmousedown;
@@ -223,6 +229,10 @@ function onmouseup(e) {
     yrule.onmouseup(e);
 }
 
+/* function onclick(e) {
+	
+} */
+
 /* function init_qt(n) {
 	console.log('init_qt ' + n);
     qt.clear();
@@ -246,7 +256,6 @@ function fetch_qt(x, y, width, height) {
 } */
 
 function init_array(n) {
-	console.log(n);
     // Generate some random data points
     data = [];
     for (var i=0; i < n; i++) {
@@ -257,6 +266,39 @@ function init_array(n) {
 }
 
 function fetch_array(x, y, width, height) {
+    return data;
+}
+
+function init_tiles(n) {
+    // Generate some random data points
+    tiles = [];
+    for (var i=0; i < n; i++) {
+        var x = Math.floor( Math.random() * gu1 );
+        var y = Math.floor( Math.random() * gu2 );
+        var col = Math.floor(x/tileColSize);
+        var row = Math.floor(y/tileRowSize);
+        var t = row * maxTiles + col;
+        if (!tiles[t])
+        	tiles[t] = [];
+        tiles[t].push({ x: x, y: y});
+    }
+}
+
+function fetch_tiles(x, y, width, height) {
+	var col1 = int(x/tileColSize);
+	var row1 = int(y/tileRowSize);
+	var col2 = col1 + Math.ceil(width/tileColSize);
+	var row2 = row1 + Math.ceil(height/tileRowSize);
+	var data = [];
+	for (var r = row1; r <= row2; r++) {
+		for (var c = col1; c <= col2; c++) {
+			var t = r * maxTiles + c;
+            if (tiles[t]) {
+            	for (var i = 0; i < tiles[t].length; i++)
+            	    data.push(tiles[t][i]);
+            }
+		}
+	}
     return data;
 }
 

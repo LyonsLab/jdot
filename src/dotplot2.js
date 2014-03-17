@@ -71,9 +71,35 @@ function Rule(element, config) {
         this.redraw();
 	}
 	
+    this.highlight = function(x, y, width, height) {
+    	console.log('ruler highlight: '+x+' '+y+' '+width+' '+height);
+    	if (this.config.orientation == 'horizontal')
+    		drawRect(this.context, x, 0, width, this.config.size.height-1, 0.1);
+    	else
+    		drawRect(this.context, 0, y, this.config.size.width-1, height, 0.1);
+    }
+	
+    this.select = function(x, y, width, height) {
+    	var pos = (this.config.orientation == 'horizontal' ? x : y);
+    	var trans = pos/this.scale;
+    	this.view = (this.config.orientation == 'horizontal' ? width : height)/this.scale;
+    	var newScale = this.length / this.view;
+    	var zoom = newScale / this.scale;
+    	this.scale = newScale;
+    	
+//    	this.context.translate( this.origin.x, this.origin.y );
+//    	this.context.scale(xzoom, yzoom);
+//    	this.context.translate(-tx, -ty);
+    	
+    	this.origin = trans;
+    	console.log('ruler select: '+x+','+y+','+width+','+height+' trans='+trans+' '+this.scale);
+    	
+    	this.redraw();
+    }
+	
     this.onmousedown = function(e) {
-    	var mousePos = ( this.config.orientation == 'horizontal' ? e.x : e.y );
-        this.mouse.drag.offset = mousePos;
+        this.mouse.drag.offset.x = e.x;
+        this.mouse.drag.offset.y = e.y;
         this.mouse.isDown = true;
     };
 
@@ -86,8 +112,17 @@ function Rule(element, config) {
         if (!this.mouse.isDown) return;
         if (this.view == this.config.extent) return; // can't move, zoomed out all the way
 
-        var mousePos = ( this.config.orientation == 'horizontal' ? e.x : e.y );
-        var trans = (mousePos - this.mouse.drag.offset) / this.scale / this.config.dragSpeed;
+        var mousePos, mouseOfs;
+        if (this.config.orientation == 'horizontal') {
+        	mousePos = e.x;
+        	mouseOfs = this.mouse.drag.offset.x;
+        }
+        else {
+        	mousePos = e.y;
+        	mouseOfs = this.mouse.drag.offset.y;
+        }
+        
+        var trans = (mousePos - mouseOfs) / this.scale / this.config.dragSpeed;
         //console.log("xaxis mousemove: e=" + mousePos + " trans=" + trans + " origin=" + this.origin + " width=" + this.view + " scale=" + this.scale);
 
         // Check bounds
@@ -231,6 +266,8 @@ function DotPlot(element, chr1, chr2, config) {
     }
     
     this.drawDots = function() {
+    	if (!data) return;
+    	
     	var ctx = this.context;
 //      ctx.lineWidth = 20;
         ctx.globalAlpha = 1;
