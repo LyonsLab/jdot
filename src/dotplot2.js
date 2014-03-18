@@ -562,9 +562,7 @@ function restoreSelection(context) {
         var x = this.selectionBuffer[0],
             y = this.selectionBuffer[1];
 
-        console.log(this.selectionBuffer[2]);
-
-	    context.putImageData(this.selectionBuffer[2], x, y);
+        context.putImageData(this.selectionBuffer[2], x, y);
         this.selectionBuffer = undefined;
     }
 }
