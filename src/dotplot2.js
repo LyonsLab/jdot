@@ -100,18 +100,17 @@ function Rule(element, config) {
 	
     this.select = function(x, y, width, height) {
     	var pos = (this.config.orientation == 'horizontal' ? x : y);
-    	var trans = pos/this.scale;
+    	var trans = this.origin + pos/this.scale;
     	this.view = (this.config.orientation == 'horizontal' ? width : height)/this.scale;
+    	
     	var newScale = this.length / this.view;
     	var zoom = newScale / this.scale;
     	this.scale = newScale;
     	
-//    	this.context.translate( this.origin.x, this.origin.y );
-//    	this.context.scale(xzoom, yzoom);
-//    	this.context.translate(-tx, -ty);
-    	
     	this.origin = trans;
-    	console.log('ruler select: '+x+','+y+','+width+','+height+' trans='+trans+' '+this.scale);
+    	//console.log('ruler select: '+x+','+y+','+width+','+height+' trans='+trans+' '+this.scale);
+    	
+    	clearSelection();
     	
     	this.redraw();
     }
@@ -358,8 +357,8 @@ function DotPlot(element, chr1, chr2, config) {
     }
     
     this.select = function(x, y, width, height) {
-    	var tx = x/this.xscale;
-    	var ty = y/this.yscale;
+    	var tx = this.origin.x + x/this.xscale;
+    	var ty = this.origin.y + y/this.yscale;
     	this.view.width = width/this.xscale;
     	this.view.height = height/this.yscale;
 
@@ -377,7 +376,9 @@ function DotPlot(element, chr1, chr2, config) {
     	
     	this.origin.x = tx;
     	this.origin.y = ty;
-    	//console.log('select: '+x+','+y+','+width+','+height+' t='+tx+','+ty+' '+this.xscale+' '+this.yscale);
+    	console.log('select: '+x+','+y+','+width+','+height+' t='+tx+','+ty+' '+this.xscale+' '+this.yscale);
+    	
+    	clearSelection();
     	
     	this.redraw();
     }
@@ -603,6 +604,10 @@ function restoreSelection(context) {
 
 function saveSelection(context, x, y , width, height) {
     this.selectionBuffer = [x, y, context.getImageData(x, y, width, height)];
+}
+
+function clearSelection() {
+	this.selectionBuffer = undefined;
 }
 
 function drawRect(context, x, y, width, height, alpha) {
