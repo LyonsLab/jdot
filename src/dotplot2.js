@@ -6,6 +6,7 @@
 function Rule(element, config) {
     this.configure = function(config) {
         this.config = config || {};
+        this.selectionBuffer;
 
         if (this.config.style) {
         	applyStyles(this.element, this.config.style);
@@ -76,11 +77,25 @@ function Rule(element, config) {
 	}
 	
     this.highlight = function(x, y, width, height) {
-    	console.log('ruler highlight: '+x+' '+y+' '+width+' '+height);
-    	if (this.config.orientation == 'horizontal')
-    		drawRect(this.context, x, 0, width, this.config.size.height-1, 0.1);
-    	else
-    		drawRect(this.context, 0, y, this.config.size.width-1, height, 0.1);
+        console.log('ruler highlight: '+x+' '+y+' '+width+' '+height);
+
+        var x1 = Math.min(x, x + width),
+            y1 = Math.min(y, y + height),
+            w  = Math.abs(width),
+            h  = Math.abs(height);
+
+        // Check for zero length
+        if (w === 0 || h === 0) return;
+
+        if (this.config.orientation == 'horizontal') {
+            restoreSelection(this.context, x1, 0);
+            saveSelection(this.context, x1, 0, w, this.config.size.height-1, 0.1);
+            drawRect(this.context, x1, 0, w, this.config.size.height-1, 0.1);
+        } else {
+            restoreSelection(this.context, 0, y1);
+            saveSelection(this.context, x1, 0, w, this.config.size.height-1, 0.1);
+            drawRect(this.context, 0, y1, this.config.size.width-1, height, 0.1);
+        }
     }
 	
     this.select = function(x, y, width, height) {
@@ -329,7 +344,17 @@ function DotPlot(element, chr1, chr2, config) {
     };
     
     this.highlight = function(x, y, width, height) {
-    	drawRect(this.context, x, y, width, height, 0.1);
+        var x1 = Math.min(x, x + width),
+            y1 = Math.min(y, y + height),
+            w  = Math.abs(width),
+            h  = Math.abs(height);
+
+        // Check for zero length
+        if (w === 0 || h === 0) return;
+
+        restoreSelection(this.context);
+        saveSelection(this.context, x1, y1, w, h);
+        drawRect(this.context, x1, y1, w, h, 0.1);
     }
     
     this.select = function(x, y, width, height) {
@@ -566,6 +591,20 @@ function drawScaledRect(context, x1, y1, x2, y2, xscale, yscale) {
 	drawLine(context, x2, y1+1, x2, y2-1);
 }
 
+function restoreSelection(context) {
+    if (this.selectionBuffer !== undefined) {
+        var x = this.selectionBuffer[0],
+            y = this.selectionBuffer[1];
+
+        context.putImageData(this.selectionBuffer[2], x, y);
+        this.selectionBuffer = undefined;
+    }
+}
+
+function saveSelection(context, x, y , width, height) {
+    this.selectionBuffer = [x, y, context.getImageData(x, y, width, height)];
+}
+
 function drawRect(context, x, y, width, height, alpha) {
 	if (typeof(alpha) == "undefined")
 		alpha = 1;
@@ -574,7 +613,7 @@ function drawRect(context, x, y, width, height, alpha) {
 		//image.data[pos] = 0;
 		//image.data[pos+1] = 0;
 		//image.data[pos+2] = 0;
-		image.data[pos+3] = alpha * 255;
+		image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
 	}
 	context.putImageData(image, x, y);
 }
