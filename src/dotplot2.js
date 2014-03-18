@@ -7,6 +7,10 @@ function Rule(element, config) {
     this.configure = function(config) {
         this.config = config || {};
 
+        if (this.config.style) {
+        	applyStyles(this.element, this.config.style);
+        }
+        
         this.config.size = this.config.size || {
             width: 800,
             height: 50
@@ -224,6 +228,10 @@ function Rule(element, config) {
 function DotPlot(element, chr1, chr2, config) {
     this.configure = function(config) {
         this.config = config || {};
+        
+        if (this.config.style) {
+        	applyStyles(this.element, this.config.style);
+        }
 
         this.config.size = this.config.size || {
             width: 800,
@@ -245,12 +253,12 @@ function DotPlot(element, chr1, chr2, config) {
     this.drawChromosomes = function() { //FIXME: use drawRect() instead
     	var ctx = this.context;
         //ctx.imageSmoothingEnabled = false;
-        ctx.lineWidth = 1 / this.xscale; // same size regardless of zoom
+        ctx.lineWidth = 1 / this.xscale / 2; // same size regardless of zoom
         for (var i = 0, x = 0; i < this.chr1.length-1; i++) {
         	x += this.chr1[i].length;
         	drawLine(ctx, x, 1, x, this.config.extent.height-1);
         }
-        ctx.lineWidth = 1 / this.yscale; // same size regardless of zoom
+        ctx.lineWidth = 1 / this.yscale / 2; // same size regardless of zoom
         for (var i = 0, y = 0; i < this.chr2.length-1; i++) {
         	y += this.chr2[i].length;
         	drawLine(ctx, 1, y, this.config.extent.width-1, y);
@@ -284,7 +292,7 @@ function DotPlot(element, chr1, chr2, config) {
     this.render = function() {
     	if (!this.fetch) return;
 
-    	var startTime = Date.now();
+    	//var startTime = Date.now();
     	
         var data = this.fetch(this.origin.x, this.origin.y,
                 			  this.view.width, this.view.height );
@@ -293,7 +301,7 @@ function DotPlot(element, chr1, chr2, config) {
         this.drawDots();
         this.drawBorder();
         
-        console.log('render time: ' + (Date.now() - startTime));
+        //console.log('render time: ' + (Date.now() - startTime));
     };
     
     this.translate = function translate(x, y) {
@@ -426,7 +434,7 @@ function DotPlot(element, chr1, chr2, config) {
 
     this.onmousemove = function(e, axis) {
         if (!this.mouse.isDown) return;
-        //if (this.scale == 1) return;
+        if (this.isMinScale()) return; // can't move, zoomed-out all the way
 
         var tx = 0;
         var ty = 0;
@@ -441,6 +449,12 @@ function DotPlot(element, chr1, chr2, config) {
         this.redraw();
     };
 
+    this.isMinScale = function() {
+        var minXScale = this.config.size.width / this.config.extent.width;
+        var minYScale = this.config.size.height / this.config.extent.height;
+        return (this.xscale == minXScale && this.yscale == minYScale);
+    }
+    
 //    this.load = function(data) {
 //      this.data = data;
 //    };
@@ -481,14 +495,34 @@ function DotPlot(element, chr1, chr2, config) {
 }
 
 function toUnits(n) {
-	   var k = 1000;
-	   var sizes = ['', 'K', 'M', 'G', 'T'];
-	   if (n === 0) return '0';
-	   var i = parseInt(Math.floor(Math.log(n) / Math.log(k)),10);
-	   var prec = 4;
-	   //if (n % 1 === 0) prec = 1;
-	   return (n / Math.pow(k, i)).toPrecision(prec) + ' ' + sizes[i];
-	}
+	var k = 1000;
+	var sizes = ['', 'K', 'M', 'G', 'T'];
+	if (n === 0) return '0';
+	var i = parseInt(Math.floor(Math.log(n) / Math.log(k)),10);
+	var prec = 4;
+	//if (n % 1 === 0) prec = 1;
+	return (n / Math.pow(k, i)).toPrecision(prec) + ' ' + sizes[i];
+}
+
+//humanReadableNumber: function( num ) {
+//    num = parseInt(num);
+//    var suffix = '';
+//    if( num >= 1e12 ) {
+//        num /= 1e12;
+//        suffix = 'T';
+//    } else if( num >= 1e9 ) {
+//        num /= 1e9;
+//        suffix = 'G';
+//    } else if( num >= 1e6 ) {
+//        num /= 1e6;
+//        suffix = 'M';
+//    } else if( num >= 1000 ) {
+//        num /= 1000;
+//        suffix = 'K';
+//    }
+//
+//    return (num.toFixed(2)+' '+suffix).replace(/0+ /,' ').replace(/\. /,' ');
+//}
 
 function commify(val) {
 //    my $text = reverse $_[0];
@@ -521,7 +555,6 @@ function drawLine(context, x1, y1, x2, y2, lineWidth) {
 	context.moveTo(x1, y1);
 	context.lineTo(x2, y2);
 	context.stroke();
-	console.log(context);
 }
 
 function drawScaledRect(context, x1, y1, x2, y2, xscale, yscale) {
@@ -607,4 +640,11 @@ function measureText(text, bold, font, size)
     __measuretext_cache__[str] = size;
     
     return size;
+}
+
+function applyStyles(element, styles) {
+	for (var prop in styles) {
+		//alert(prop + " is " + styles[prop]);
+		element.style[prop] = styles[prop];
+	}
 }
