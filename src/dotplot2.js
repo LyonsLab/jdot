@@ -77,7 +77,11 @@ function Rule(element, config) {
 	}
 	
     this.highlight = function(x1, y1, x2, y2) {
-        console.log('ruler highlight: '+x1+','+y1+' '+x2+','+y2);
+    	x1 = constrainTo(x1, 0, this.config.size.width-1);
+    	y1 = constrainTo(y1, 0, this.config.size.height-1);
+    	x2 = constrainTo(x2, 0, this.config.size.width-1);
+    	y2 = constrainTo(y2, 0, this.config.size.height-1);
+        //console.log('ruler highlight: '+x1+','+y1+' '+x2+','+y2);
 
         var x = Math.min(x1, x2),
             y = Math.min(y1, y2),
@@ -100,6 +104,10 @@ function Rule(element, config) {
     }
 	
     this.select = function(x1, y1, x2, y2) {
+    	x1 = constrainTo(x1, 0, this.config.size.width-1);
+    	y1 = constrainTo(y1, 0, this.config.size.height-1);
+    	x2 = constrainTo(x2, 0, this.config.size.width-1);
+    	y2 = constrainTo(y2, 0, this.config.size.height-1);
         var x = Math.min(x1, x2),
 	    	y = Math.min(y1, y2),
 	    	width = Math.abs(x1-x2)+1,
@@ -352,6 +360,10 @@ function DotPlot(element, chr1, chr2, config) {
     };
     
     this.highlight = function(x1, y1, x2, y2) {
+    	x1 = constrainTo(x1, 0, this.config.size.width-1);
+    	y1 = constrainTo(y1, 0, this.config.size.height-1);
+    	x2 = constrainTo(x2, 0, this.config.size.width-1);
+    	y2 = constrainTo(y2, 0, this.config.size.height-1);
         var x = Math.min(x1, x2),
         	y = Math.min(y1, y2),
         	width = Math.abs(x1-x2)+1,
@@ -366,6 +378,10 @@ function DotPlot(element, chr1, chr2, config) {
     }
     
     this.select = function(x1, y1, x2, y2) {
+    	x1 = constrainTo(x1, 0, this.config.size.width-1);
+    	y1 = constrainTo(y1, 0, this.config.size.height-1);
+    	x2 = constrainTo(x2, 0, this.config.size.width-1);
+    	y2 = constrainTo(y2, 0, this.config.size.height-1);
         var x = Math.min(x1, x2),
 	    	y = Math.min(y1, y2),
 	    	width = Math.abs(x1-x2)+1,
@@ -709,3 +725,37 @@ function applyStyles(element, styles) {
 		element.style[prop] = styles[prop];
 	}
 }
+
+function constrainTo(val, min, max) {
+	if (val <= min)
+		return min;
+	if (val >= max)
+		return max;
+	return val;
+}
+
+//Array.prototype.clipTo=(function(r2) {
+//    var r1 = Array.prototype.push;
+//    return function() {
+//    	r1[0] = Math.min(r1[0], r2[2]);
+//    	r1[0] = Math.max(r1[0], r2[0]);
+//    	r1[1] = Math.min(r1[1], r2[3]);
+//    	r1[1] = Math.max(r1[1], r2[1]);
+//    	r1[2] = Math.min(r1[2], r2[2]);
+//    	r1[2] = Math.max(r1[2], r2[0]);
+//    	r1[3] = Math.min(r1[3], r2[3]);
+//    	r1[3] = Math.max(r1[3], r2[1]);
+//        return original.apply(this,arguments);
+//    };
+//})();
+
+//function clipTo(r1, r2) {
+//	r1[0] = Math.min(r1[0], r2[2]);
+//	r1[0] = Math.max(r1[0], r2[0]);
+//	r1[1] = Math.min(r1[1], r2[3]);
+//	r1[1] = Math.max(r1[1], r2[1]);
+//	r1[2] = Math.min(r1[2], r2[2]);
+//	r1[2] = Math.max(r1[2], r2[0]);
+//	r1[3] = Math.min(r1[3], r2[3]);
+//	r1[3] = Math.max(r1[3], r2[1]);
+//}

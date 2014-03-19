@@ -106,6 +106,12 @@ yaxis.onmousewheel = onmousewheel;
 yaxis.onmousedown  = onmousedown;
 yaxis.onmouseup    = onmouseup;
 yaxis.onmousemove  = onmousemove;
+
+document.onmousedown = onmousedown;
+document.onmouseup   = onmouseup;
+document.onmousemove = onmousemove;
+
+var mouseTarget;
 	
 //------------------------------------------------------------------------------
 function onmousewheel(e) {
@@ -126,22 +132,29 @@ function onmousewheel(e) {
 }
 
 function onmousemove(e) {
-	if (e.shiftKey) {
-	    if (e.target.id == 'xaxis' && xrule.mouse.isDown) {
+    if (mouseTarget) {
+    	console.log('onmousemove target='+mouseTarget.id);
+/*         if (e.target != mouseTarget) {
+            console.log('mousemove mismatch');
+            return;
+        } */
+    }
+	if (mouseTarget && e.shiftKey) {
+	    if (mouseTarget.id == 'xaxis' && xrule.mouse.isDown) {
 	    	var x1 = e.clientX - xrule.element.offsetLeft;
             var y1 = e.clientY - xrule.element.offsetTop;
             var x2 = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
             var y2 = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
             xrule.highlight(x1, y1, x2, y2);
 	    }
-	    else if (e.target.id == 'yaxis' && yrule.mouse.isDown) {
+	    else if (mouseTarget.id == 'yaxis' && yrule.mouse.isDown) {
 	        var x1 = e.clientX - yrule.element.offsetLeft;
 	        var y1 = e.clientY - yrule.element.offsetTop;
 	        var x2 = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
 	        var y2 = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
             yrule.highlight(x1, y1, x2, y2);
 	    }
-	    else if (e.target.id == 'view' && dp.mouse.isDown) {
+	    else if (mouseTarget.id == 'view' && dp.mouse.isDown) {
             var x1 = e.clientX - dp.element.offsetLeft;
             var y1 = e.clientY - dp.element.offsetTop;
             var x2 = dp.mouse.drag.offset.x - dp.element.offsetLeft;
@@ -170,6 +183,14 @@ function onmousemove(e) {
 }
 
 function onmousedown(e) {
+	if (mouseTarget) {
+		console.log('onmousedown target='+mouseTarget.id);
+		if (e.target != mouseTarget) {
+			console.log('mousedown mismatch');
+			return;
+		}
+	}
+	mouseTarget = e.target;
 	if (e.target.id == 'xaxis') {
 		xrule.onmousedown(e);
 		dp.onmousedown(e);
@@ -186,8 +207,15 @@ function onmousedown(e) {
 }
 
 function onmouseup(e) {
-	if (e.shiftKey) { // FIXME: optimize please ... are abs/min checks still necessary?
-		if (e.target.id == 'xaxis' && xrule.mouse.isDown) {
+    if (mouseTarget) {
+    	console.log('onmouseup target='+mouseTarget.id);
+        /* if (e.target != mouseTarget) {
+            console.log('mousemove mismatch');
+            return;
+        } */
+    }
+	if (mouseTarget && e.shiftKey) { // FIXME: optimize please ... are abs/min checks still necessary?
+		if (mouseTarget.id == 'xaxis' && xrule.mouse.isDown) {
 			var x1 = e.clientX - xrule.element.offsetLeft;
             var y1 = e.clientY - xrule.element.offsetTop;
             var x2 = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
@@ -195,7 +223,7 @@ function onmouseup(e) {
             xrule.select(x1, y1, x2, y2);
             dp.select(x1, 0, x2, dp.element.height);
 		}
-		else if (e.target.id == 'yaxis' && yrule.mouse.isDown) {
+		else if (mouseTarget.id == 'yaxis' && yrule.mouse.isDown) {
 			var x1 = e.clientX - yrule.element.offsetLeft;
             var y1 = e.clientY - yrule.element.offsetTop;
             var x2 = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
@@ -203,7 +231,7 @@ function onmouseup(e) {
             yrule.select(x1, y1, x2, y2);
             dp.select(0, y1, dp.element.width, y2);
 	    }
-		else if (e.target.id == 'view' && dp.mouse.isDown) {
+		else if (mouseTarget.id == 'view' && dp.mouse.isDown) {
 			var x1 = e.clientX - dp.element.offsetLeft;
 			var y1 = e.clientY - dp.element.offsetTop;
             var x2 = dp.mouse.drag.offset.x - dp.element.offsetLeft;
@@ -216,6 +244,8 @@ function onmouseup(e) {
     dp.onmouseup(e);
     xrule.onmouseup(e);
     yrule.onmouseup(e);
+    
+    mouseTarget = null;
 }
 
 /* function onclick(e) {
