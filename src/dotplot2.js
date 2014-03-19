@@ -76,29 +76,38 @@ function Rule(element, config) {
         this.redraw();
 	}
 	
-    this.highlight = function(x, y, width, height) {
-        console.log('ruler highlight: '+x+' '+y+' '+width+' '+height);
+    this.highlight = function(x1, y1, x2, y2) {
+        console.log('ruler highlight: '+x1+','+y1+' '+x2+','+y2);
 
-        var x1 = Math.min(x, x + width),
-            y1 = Math.min(y, y + height),
-            w  = Math.abs(width),
-            h  = Math.abs(height);
+        var x = Math.min(x1, x2),
+            y = Math.min(y1, y2),
+            width = Math.abs(x1-x2)+1,
+            height  = Math.abs(y1-y2)+1;
 
-        // Check for zero length
-        if (w === 0 || h === 0) return;
+        // Check for zero size
+        if (width === 0 || height === 0) return;
 
         if (this.config.orientation == 'horizontal') {
-            restoreSelection(this.context, x1, 0);
-            saveSelection(this.context, x1, 0, w, this.config.size.height-1, 0.1);
-            drawRect(this.context, x1, 0, w, this.config.size.height-1, 0.1);
-        } else {
-            restoreSelection(this.context, 0, y1);
-            saveSelection(this.context, x1, 0, w, this.config.size.height-1, 0.1);
-            drawRect(this.context, 0, y1, this.config.size.width-1, height, 0.1);
+            restoreSelection(this.context, x, 0);
+            saveSelection(this.context, x, 0, width, this.config.size.height-1, 0.1);
+            drawRect(this.context, x, 0, width, this.config.size.height-1, 0.1);
+        } 
+        else {
+            restoreSelection(this.context, 0, y);
+            saveSelection(this.context, x, 0, width, this.config.size.height-1, 0.1);
+            drawRect(this.context, 0, y, this.config.size.width-1, height, 0.1);
         }
     }
 	
-    this.select = function(x, y, width, height) {
+    this.select = function(x1, y1, x2, y2) {
+        var x = Math.min(x1, x2),
+	    	y = Math.min(y1, y2),
+	    	width = Math.abs(x1-x2)+1,
+	    	height  = Math.abs(y1-y2)+1;
+
+	    // Check for zero size
+	    if (width === 0 || height === 0) return;
+    
     	var pos = (this.config.orientation == 'horizontal' ? x : y);
     	var trans = this.origin + pos/this.scale;
     	this.view = (this.config.orientation == 'horizontal' ? width : height)/this.scale;
@@ -342,21 +351,29 @@ function DotPlot(element, chr1, chr2, config) {
         this.render();
     };
     
-    this.highlight = function(x, y, width, height) {
-        var x1 = Math.min(x, x + width),
-            y1 = Math.min(y, y + height),
-            w  = Math.abs(width),
-            h  = Math.abs(height);
+    this.highlight = function(x1, y1, x2, y2) {
+        var x = Math.min(x1, x2),
+        	y = Math.min(y1, y2),
+        	width = Math.abs(x1-x2)+1,
+        	height  = Math.abs(y1-y2)+1;
 
-        // Check for zero length
-        if (w === 0 || h === 0) return;
+	    // Check for zero size
+	    if (width === 0 || height === 0) return;
 
         restoreSelection(this.context);
-        saveSelection(this.context, x1, y1, w, h);
-        drawRect(this.context, x1, y1, w, h, 0.1);
+        saveSelection(this.context, x, y, width, height);
+        drawRect(this.context, x, y, width, height, 0.1);
     }
     
-    this.select = function(x, y, width, height) {
+    this.select = function(x1, y1, x2, y2) {
+        var x = Math.min(x1, x2),
+	    	y = Math.min(y1, y2),
+	    	width = Math.abs(x1-x2)+1,
+	    	height  = Math.abs(y1-y2)+1;
+
+	    // Check for zero size
+	    if (width === 0 || height === 0) return;
+    
     	var tx = this.origin.x + x/this.xscale;
     	var ty = this.origin.y + y/this.yscale;
     	this.view.width = width/this.xscale;

@@ -128,25 +128,25 @@ function onmousewheel(e) {
 function onmousemove(e) {
 	if (e.shiftKey) {
 	    if (e.target.id == 'xaxis' && xrule.mouse.isDown) {
-	    	var mousex = e.clientX - xrule.element.offsetLeft;
-            var mousey = e.clientY - xrule.element.offsetTop;
-            var width = e.x - xrule.mouse.drag.offset.x;
-            var height = e.y - xrule.mouse.drag.offset.y;
-            xrule.highlight(xrule.mouse.drag.offset.x - xrule.element.offsetLeft, xrule.mouse.drag.offset.y - xrule.element.offsetTop, width, height);
+	    	var x1 = e.clientX - xrule.element.offsetLeft;
+            var y1 = e.clientY - xrule.element.offsetTop;
+            var x2 = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
+            var y2 = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
+            xrule.highlight(x1, y1, x2, y2);
 	    }
 	    else if (e.target.id == 'yaxis' && yrule.mouse.isDown) {
-            var mousex = e.clientX - yrule.element.offsetLeft;
-            var mousey = e.clientY - yrule.element.offsetTop;
-            var width = e.x - yrule.mouse.drag.offset.x;
-            var height = e.y - yrule.mouse.drag.offset.y;
-            yrule.highlight(yrule.mouse.drag.offset.x - yrule.element.offsetLeft, yrule.mouse.drag.offset.y - yrule.element.offsetTop, width, height);
+	        var x1 = e.clientX - yrule.element.offsetLeft;
+	        var y1 = e.clientY - yrule.element.offsetTop;
+	        var x2 = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
+	        var y2 = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
+            yrule.highlight(x1, y1, x2, y2);
 	    }
 	    else if (e.target.id == 'view' && dp.mouse.isDown) {
-            var mousex = e.clientX - dp.element.offsetLeft;
-            var mousey = e.clientY - dp.element.offsetTop;
-    		var width = e.x - dp.mouse.drag.offset.x;
-    		var height = e.y - dp.mouse.drag.offset.y;
-    		dp.highlight(dp.mouse.drag.offset.x - dp.element.offsetLeft, dp.mouse.drag.offset.y - dp.element.offsetTop, width, height);
+            var x1 = e.clientX - dp.element.offsetLeft;
+            var y1 = e.clientY - dp.element.offsetTop;
+            var x2 = dp.mouse.drag.offset.x - dp.element.offsetLeft;
+            var y2 = dp.mouse.drag.offset.y - dp.element.offsetTop;
+    		dp.highlight(x1, y1, x2, y2);
 	    }
 	}
 	else {
@@ -186,37 +186,31 @@ function onmousedown(e) {
 }
 
 function onmouseup(e) {
-	if (e.shiftKey) {
+	if (e.shiftKey) { // FIXME: optimize please ... are abs/min checks still necessary?
 		if (e.target.id == 'xaxis' && xrule.mouse.isDown) {
-            var mousex = e.clientX - xrule.element.offsetLeft;
-            var mousey = e.clientY - xrule.element.offsetTop;
-            var width = e.x - xrule.mouse.drag.offset.x;
-            var height = e.y - xrule.mouse.drag.offset.y;
-            var x = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
-            var y = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
-            xrule.select(x, y, width, height);
-            dp.select(x, 0, width, dp.element.height);
+			var x1 = e.clientX - xrule.element.offsetLeft;
+            var y1 = e.clientY - xrule.element.offsetTop;
+            var x2 = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
+            var y2 = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
+            xrule.select(x1, y1, x2, y2);
+            dp.select(x1, 0, x2, dp.element.height);
 		}
 		else if (e.target.id == 'yaxis' && yrule.mouse.isDown) {
-            var mousex = e.clientX - yrule.element.offsetLeft;
-            var mousey = e.clientY - yrule.element.offsetTop;
-            var width = e.x - yrule.mouse.drag.offset.x;
-            var height = e.y - yrule.mouse.drag.offset.y;
-            var x = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
-            var y = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
-            yrule.select(x, y, width, height);
-            dp.select(0, y, dp.element.width, height);
+			var x1 = e.clientX - yrule.element.offsetLeft;
+            var y1 = e.clientY - yrule.element.offsetTop;
+            var x2 = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
+            var y2 = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
+            yrule.select(x1, y1, x2, y2);
+            dp.select(0, y1, dp.element.width, y2);
 	    }
 		else if (e.target.id == 'view' && dp.mouse.isDown) {
-    		var mousex = e.clientX - dp.element.offsetLeft;
-            var mousey = e.clientY - dp.element.offsetTop;
-            var width = e.x - dp.mouse.drag.offset.x;
-            var height = e.y - dp.mouse.drag.offset.y;
-            var x = dp.mouse.drag.offset.x - dp.element.offsetLeft;
-            var y = dp.mouse.drag.offset.y - dp.element.offsetTop;
-            xrule.select(x, y, width, height);
-            yrule.select(x, y, width, height);
-    		dp.select(x, y, width, height);
+			var x1 = e.clientX - dp.element.offsetLeft;
+			var y1 = e.clientY - dp.element.offsetTop;
+            var x2 = dp.mouse.drag.offset.x - dp.element.offsetLeft;
+            var y2 = dp.mouse.drag.offset.y - dp.element.offsetTop;
+            xrule.select(x1, y1, x2, y2);
+            yrule.select(x1, y1, x2, y2);
+    		dp.select(x1, y1, x2, y2);
 		}
 	}
     dp.onmouseup(e);
