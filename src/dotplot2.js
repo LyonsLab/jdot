@@ -296,7 +296,7 @@ function DotPlot(element, chr1, chr2, config) {
         }
     }
     
-    this.drawDots = function() {
+    this.drawDots = function(data) {
     	if (!data) return;
     	
     	var ctx = this.context;
@@ -314,6 +314,24 @@ function DotPlot(element, chr1, chr2, config) {
 //            ctx.stroke();
         }
     }
+
+    this.drawLines = function(data, xscale, yscale) {
+        if (!data) return;
+
+        var ctx = this.context;
+        for (var i = 0; i < data.length; i++) {
+            var x1 = data[i].x1;
+            var y1 = data[i].y1;
+            var x2 = data[i].x2;
+            var y2 = data[i].y2;
+
+            ctx.lineWidth = 1 / xscale;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+    }
     
     this.drawBorder = function() {
         // Draw frame around canvas
@@ -327,9 +345,10 @@ function DotPlot(element, chr1, chr2, config) {
     	
         var data = this.fetch(this.origin.x, this.origin.y,
                 			  this.view.width, this.view.height );
-        
+
         this.drawChromosomes();
-        this.drawDots();
+        //this.drawDots();
+        this.drawLines(data, this.xscale, this.yscale);
         this.drawBorder();
         
         //console.log('render time: ' + (Date.now() - startTime));
@@ -648,10 +667,18 @@ function drawRect(context, x, y, width, height, alpha) {
 		alpha = 1;
 	var image = context.getImageData(x, y, width, height);
 	for (var i = 0, pos = 0; i < width*height;  i++, pos += 4) {
-		//image.data[pos] = 0;
-		//image.data[pos+1] = 0;
-		//image.data[pos+2] = 0;
-		image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
+        if (i < width) {
+            image.data[pos+3] = 155;
+        } else if (i > width * (height - 1)) {
+            image.data[pos+3] = 155;
+        } else if (i % width == 0 || i % width == width - 1) {
+            image.data[pos+3] = 155;
+        } else {
+            //image.data[pos] = 0;
+            //image.data[pos+1] = 0;
+            //image.data[pos+2] = 0;
+            image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
+        }
 	}
 	context.putImageData(image, x, y);
 }
