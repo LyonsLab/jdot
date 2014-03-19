@@ -632,10 +632,18 @@ function drawRect(context, x, y, width, height, alpha) {
 		alpha = 1;
 	var image = context.getImageData(x, y, width, height);
 	for (var i = 0, pos = 0; i < width*height;  i++, pos += 4) {
-		//image.data[pos] = 0;
-		//image.data[pos+1] = 0;
-		//image.data[pos+2] = 0;
-		image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
+        if (i < width) {
+            image.data[pos+3] = 155;
+        } else if (i > width * (height - 1)) {
+            image.data[pos+3] = 155;
+        } else if (i % width == 0 || i % width == width - 1) {
+            image.data[pos+3] = 155;
+        } else {
+            //image.data[pos] = 0;
+            //image.data[pos+1] = 0;
+            //image.data[pos+2] = 0;
+            image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
+        }
 	}
 	context.putImageData(image, x, y);
 }
