@@ -14,7 +14,6 @@
 </div>
 
 <script src="../src/dotplot2.js"></script>
-<script src="../src/quadtree.js"></script>
 <script>
 var initData = init_array;
 var fetchData = fetch_array;
@@ -38,7 +37,7 @@ var maxTiles = 100;
 var tileColSize = Math.floor(gu1/maxTiles);
 var tileRowSize = Math.floor(gu2/maxTiles);
 
-var view = document.getElementById('view');
+var view  = document.getElementById('view');
 var xaxis = document.getElementById('xaxis');
 var yaxis = document.getElementById('yaxis');
 
@@ -46,6 +45,7 @@ var dp = new DotPlot(view,
 	chromosomes1, chromosomes2, 
 	{   size: { width: 1000, height: 800 }, 
 	    extent: { width: gu1, height: gu2 },
+	    scaled: true,
 	    style: {
 	    	left: "50px",
 	    	top: "100px",
@@ -58,8 +58,9 @@ dp.setFetch(fetchData);
 var xrule = new Rule(
 	xaxis, 
 	{   size: { width: 1000, height: 50 }, 
-	    extent: gu1, 
+	    extent: { width: gu1, height: gu1 },
 		orientation: 'horizontal',
+		scaled: false,
 		labels: chromosomes1,
 		style: {
 			left: "50px",
@@ -68,13 +69,13 @@ var xrule = new Rule(
 		}
     }
 );
-xrule.draw();
 
 var yrule = new Rule(
     yaxis, 
     {   size: { width: 50, height: 800 }, 
-        extent: gu2, 
+        extent: { width: gu2, height: gu2 }, 
         orientation: 'vertical',
+        scaled: false,
         labels: chromosomes2,
         style: {
         	left: "0px",
@@ -83,204 +84,24 @@ var yrule = new Rule(
         }
     }
 );
-yrule.draw();
-
-//var qt = QuadTree(gu1, gu2);
 
 var data;
 var tiles;
-setPoints(100*1000);
+setPoints(10*1000);
 
-view.onmousewheel = onmousewheel;
-view.onmousedown  = onmousedown;
-view.onmouseup    = onmouseup;
-view.onmousemove  = onmousemove;
-
-xaxis.onmousewheel = onmousewheel;
-xaxis.onmousedown  = onmousedown;
-xaxis.onmouseup    = onmouseup;
-xaxis.onmousemove  = onmousemove;
-//xaxis.onclick      = onclick;
-
-yaxis.onmousewheel = onmousewheel;
-yaxis.onmousedown  = onmousedown;
-yaxis.onmouseup    = onmouseup;
-yaxis.onmousemove  = onmousemove;
-
-document.onmousedown = onmousedown;
-document.onmouseup   = onmouseup;
-document.onmousemove = onmousemove;
-
-var mouseTarget;
+var controller = new Controller(dp, xrule, yrule);
 	
 //------------------------------------------------------------------------------
-function onmousewheel(e) {
-    var axis;
-    if (e.target.id == 'xaxis') {
-        axis = 'x';
-        xrule.onmousewheel(e);
-    }
-    else if (e.target.id == 'yaxis') {
-        axis = 'y';
-        yrule.onmousewheel(e);
-    }
-    else {
-    	xrule.onmousewheel(e);
-    	yrule.onmousewheel(e);
-    }
-    dp.onmousewheel(e, axis);
-}
-
-function onmousemove(e) {
-    if (mouseTarget) {
-    	console.log('onmousemove target='+mouseTarget.id);
-/*         if (e.target != mouseTarget) {
-            console.log('mousemove mismatch');
-            return;
-        } */
-    }
-	if (mouseTarget && e.shiftKey) {
-	    if (mouseTarget.id == 'xaxis' && xrule.mouse.isDown) {
-	    	var x1 = e.clientX - xrule.element.offsetLeft;
-            var y1 = e.clientY - xrule.element.offsetTop;
-            var x2 = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
-            var y2 = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
-            xrule.highlight(x1, y1, x2, y2);
-	    }
-	    else if (mouseTarget.id == 'yaxis' && yrule.mouse.isDown) {
-	        var x1 = e.clientX - yrule.element.offsetLeft;
-	        var y1 = e.clientY - yrule.element.offsetTop;
-	        var x2 = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
-	        var y2 = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
-            yrule.highlight(x1, y1, x2, y2);
-	    }
-	    else if (mouseTarget.id == 'view' && dp.mouse.isDown) {
-            var x1 = e.clientX - dp.element.offsetLeft;
-            var y1 = e.clientY - dp.element.offsetTop;
-            var x2 = dp.mouse.drag.offset.x - dp.element.offsetLeft;
-            var y2 = dp.mouse.drag.offset.y - dp.element.offsetTop;
-    		dp.highlight(x1, y1, x2, y2);
-	    }
-	}
-	else {
-		var axis;
-		if (e.target.id == 'xaxis') {
-			axis = 'x';
-			xrule.onmousemove(e);
-			dp.onmousemove(e, axis);
-		}
-		else if (e.target.id == 'yaxis') {
-            axis = 'y';
-            yrule.onmousemove(e);
-            dp.onmousemove(e, axis);
-        }
-		else if (e.target.id == 'view') {
-		    xrule.onmousemove(e);
-		    yrule.onmousemove(e);
-		    dp.onmousemove(e);
-		}
-	}
-}
-
-function onmousedown(e) {
-	if (mouseTarget) {
-		console.log('onmousedown target='+mouseTarget.id);
-		if (e.target != mouseTarget) {
-			console.log('mousedown mismatch');
-			return;
-		}
-	}
-	mouseTarget = e.target;
-	if (e.target.id == 'xaxis') {
-		xrule.onmousedown(e);
-		dp.onmousedown(e);
-	}
-	else if (e.target.id == 'yaxis') {
-		yrule.onmousedown(e);
-		dp.onmousedown(e);
-	}
-	else if (e.target.id == 'view') {
-		xrule.onmousedown(e);
-		yrule.onmousedown(e);
-	    dp.onmousedown(e);
-	}
-}
-
-function onmouseup(e) {
-    if (mouseTarget) {
-    	console.log('onmouseup target='+mouseTarget.id);
-        /* if (e.target != mouseTarget) {
-            console.log('mousemove mismatch');
-            return;
-        } */
-    }
-	if (mouseTarget && e.shiftKey) { // FIXME: optimize please ... are abs/min checks still necessary?
-		if (mouseTarget.id == 'xaxis' && xrule.mouse.isDown) {
-			var x1 = e.clientX - xrule.element.offsetLeft;
-            var y1 = e.clientY - xrule.element.offsetTop;
-            var x2 = xrule.mouse.drag.offset.x - xrule.element.offsetLeft;
-            var y2 = xrule.mouse.drag.offset.y - xrule.element.offsetTop;
-            xrule.select(x1, y1, x2, y2);
-            dp.select(x1, 0, x2, dp.element.height);
-		}
-		else if (mouseTarget.id == 'yaxis' && yrule.mouse.isDown) {
-			var x1 = e.clientX - yrule.element.offsetLeft;
-            var y1 = e.clientY - yrule.element.offsetTop;
-            var x2 = yrule.mouse.drag.offset.x - yrule.element.offsetLeft;
-            var y2 = yrule.mouse.drag.offset.y - yrule.element.offsetTop;
-            yrule.select(x1, y1, x2, y2);
-            dp.select(0, y1, dp.element.width, y2);
-	    }
-		else if (mouseTarget.id == 'view' && dp.mouse.isDown) {
-			var x1 = e.clientX - dp.element.offsetLeft;
-			var y1 = e.clientY - dp.element.offsetTop;
-            var x2 = dp.mouse.drag.offset.x - dp.element.offsetLeft;
-            var y2 = dp.mouse.drag.offset.y - dp.element.offsetTop;
-            xrule.select(x1, y1, x2, y2);
-            yrule.select(x1, y1, x2, y2);
-    		dp.select(x1, y1, x2, y2);
-		}
-	}
-    dp.onmouseup(e);
-    xrule.onmouseup(e);
-    yrule.onmouseup(e);
-    
-    mouseTarget = null;
-}
-
-/* function onclick(e) {
-	
-} */
-
-/* function init_qt(n) {
-	console.log('init_qt ' + n);
-    qt.clear();
-    data = [];
-    
-    // Generate some random data points
-    for (var i=0; i < n; i++) {
-        var x = Math.floor( Math.random() * gu1 );//dp.config.size.width;
-        var y = Math.floor( Math.random() * gu2 );//dp.config.size.height;
-        data.push({ x: x, y: y, dataType: 'point' });
-    }
-    
-    qt.insert(data);
-}
-
-function fetch_qt(x, y, width, height) {
-    var subset = qt.query_with_density( new rectangle(x, y, width, height), 500, 500);//qt.query_with_density
-    console.log('fetch: ' + subset.length + ' ' + x + ' ' + y + ' ' + width + ' '  + height);
-    //console.log(subset);
-    return subset;
-} */
 
 function init_array(n) {
     // Generate some random data points
     data = [];
     for (var i=0; i < n; i++) {
-        var x = Math.floor( Math.random() * gu1 );
-        var y = Math.floor( Math.random() * gu2 );
-        data.push({ x: x, y: y, dataType: 'point' });
+        var x1 = Math.floor( Math.random() * gu1 );
+        var y1 = Math.floor( Math.random() * gu2 );
+        var x2 = x1 + Math.floor( Math.random() * 1000 );
+        var y2 = y1 + Math.floor( Math.random() * 1000 );
+        data.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
     }
 }
 
@@ -330,24 +151,6 @@ function setPoints(n) {
 	initData(n);
 	dp.redraw();
 }
-
-function toggleType() {
-    document.getElementById('type').innerHTML = 'Points';
-    dp.redraw();
-}
-
-document.onkeydown = function(e) {
-	console.log('keydown');
-    switch(e.keyCode) {
-        case 37: dp.translate( 5,  0 ); break; // left
-        case 38: dp.translate( 0,  5 ); break; // up
-        case 39: dp.translate( -5, 0 ); break; // right
-        case 40: dp.translate( 0, -5 ); break; // down
-    }
-    
-    dp.redraw();
-};
-
 </script>
 
 </body>
