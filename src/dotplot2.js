@@ -221,7 +221,7 @@ function Controller(drawables, config) {
         		d.move(tx, ty);
         });
         
-        e.preventDefault();
+        //e.preventDefault();
 	};
 	
     this.onmousedown = function(e) {
