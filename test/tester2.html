@@ -33,7 +33,7 @@ var maxTiles = 100;
 var tileColSize = Math.floor(gu1/maxTiles);
 var tileRowSize = Math.floor(gu2/maxTiles);
 
-var dotplot = new DotPlot('dotplot', {
+/* var dotplot = new DotPlot('dotplot', {
 	size: { width: 1000, height: 800 },
 	extent: { width: gu1, height: gu2 },
 	chromosomes: [ chromosomes1, chromosomes2 ],
@@ -42,13 +42,41 @@ var dotplot = new DotPlot('dotplot', {
         top: "50px",
         position: "absolute"
     }
+}); */
+
+var dotplot = new MultiDotPlot('dotplot', {
+    size: { width: 1000, height: 800 },
+    genomes: [
+        {
+            extent: gu1,
+            chromosomes: [ chromosomes1, chromosomes2 ],
+            fetchDataHandler: fetchData,
+        },
+        {
+            extent: gu2,
+            chromosomes: [ chromosomes1, chromosomes2 ],
+            fetchDataHandler: fetchData,
+        },
+        {
+            extent: gu1,
+            chromosomes: [ chromosomes1, chromosomes2 ],
+            fetchDataHandler: fetchData,
+        },
+        {
+            extent: gu2,
+            chromosomes: [ chromosomes1, chromosomes2 ],
+            fetchDataHandler: fetchData,
+        }
+    ],
+    style: {
+        top: "50px",
+        position: "relative"
+    }
 });
 
 var data;
 var tiles;
 setPoints(10*1000);
-
-
 	
 //------------------------------------------------------------------------------
 

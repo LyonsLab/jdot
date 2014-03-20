@@ -1,5 +1,69 @@
-function DotPlot(id, config) {
+function MultiDotPlot(id, config) {
+	this.constructor = function() {
+		this.element = document.getElementById(id);
+		if (!this.element) {
+			console.log("MultiDotPlot: error: id '"+id+"' not found");
+			return;
+		}
+		
+		this.configure(config);
+		
+		if (!this.config.genomes) {
+			console.log('MultiDotPlot: no genomes specified');
+		}
+		
+		var numGenomes = this.config.genomes.length;
+		var dpPadding = 20;
+		var dpWidth = config.size.width / numGenomes - dpPadding;
+		var dpHeight = config.size.height / numGenomes - dpPadding;
+		this.dotplots = [];
+		for (var i = 0; i < numGenomes-1; i++) {
+			for (var j = 1;  j < numGenomes; j++) {
+				var genome1 = this.config.genomes[i];
+				console.log(genome1);
+				var genome2 = this.config.genomes[j];
+				var div = createDiv(this.element, this.element.id+'_'+i+'_'+j);
+				var dotplot = new DotPlot(div.id, {
+					size: { width: dpWidth, height: dpHeight },
+					extent: { width: genome1.extent, height: genome2.extent },
+					chromosomes: [ genome1.chromosomes[0], genome2.chromosomes[1] ],
+					fetchDataHandler: genome1.fetchDataHandler,
+					disableRulers: false,
+				    style: {
+				    	left: (i * dpWidth) + "px",
+				        top:  ((j-1) * dpHeight) + "px",
+				        position: "relative"
+				    }
+				});
+				this.dotplots.push(dotplot);
+			}
+		}
+	};
 	
+	this.configure = function(config) {
+		this.config = config || {};
+	
+        this.config.size = this.config.size || {
+            width: 800,
+            height: 600
+        };
+        
+        if (this.config.style) {
+        	applyStyles(this.element, this.config.style);
+        }
+	};
+	
+	this.redraw = function() {
+		for (var i = 0; i < this.dotplots; i++) {
+			this.dotplots[i].redraw();
+		}
+	};
+	
+	this.constructor();
+	this.redraw();
+}
+
+function DotPlot(id, config) {
 	this.constructor = function() {
 		this.element = document.getElementById(id);
 		if (!this.element) {
@@ -10,7 +74,7 @@ function DotPlot(id, config) {
 		this.configure(config);
 		
 		// Create Plot
-		var ruleWidth = 50;
+		var ruleWidth = (config.disableRulers ? 0 : 50);
 		var plotWidth = config.size.width - ruleWidth;
 		var plotHeight = config.size.height - ruleWidth;
 		this.plot = new Plot(
@@ -28,34 +92,36 @@ function DotPlot(id, config) {
 		);
 	
 		// Create X and Y rulers
-		this.xrule = new Rule(
-			createCanvas(this.element, 'xrule'), 
-			{   size: { width: plotWidth, height: ruleWidth }, 
-			    extent: config.extent,
-				orientation: 'horizontal',
-				scaled: false,
-				labels: config.chromosomes[0],
-				style: {
-					left: ruleWidth+"px",
-					top:  "0px",
-					position: "absolute"
-				}
-		    }
-		);
-		this.yrule = new Rule(
-			createCanvas(this.element, 'yrule'), 
-		    {   size: { width: ruleWidth, height: plotHeight }, 
-		        extent: config.extent, 
-		        orientation: 'vertical',
-		        scaled: false,
-		        labels: config.chromosomes[1],
-		        style: {
-		        	left: "0px",
-		        	top:  ruleWidth+"px",
-		        	position: "absolute"
-		        }
-		    }
-		);
+		if (!config.disableRulers) {
+			this.xrule = new Rule(
+				createCanvas(this.element, 'xrule'), 
+				{   size: { width: plotWidth, height: ruleWidth }, 
+				    extent: config.extent,
+					orientation: 'horizontal',
+					scaled: false,
+					labels: config.chromosomes[0],
+					style: {
+						left: ruleWidth+"px",
+						top:  "0px",
+						position: "absolute"
+					}
+			    }
+			);
+			this.yrule = new Rule(
+				createCanvas(this.element, 'yrule'), 
+			    {   size: { width: ruleWidth, height: plotHeight }, 
+			        extent: config.extent, 
+			        orientation: 'vertical',
+			        scaled: false,
+			        labels: config.chromosomes[1],
+			        style: {
+			        	left: "0px",
+			        	top:  ruleWidth+"px",
+			        	position: "absolute"
+			        }
+			    }
+			);
+		}
 		
 		// Setup the data fetch handler
 		this.plot.setFetch(config.fetchDataHandler);
@@ -84,8 +150,10 @@ function DotPlot(id, config) {
 	
 	this.redraw = function() {
 		this.plot.redraw();
-		this.xrule.redraw();
-		this.yrule.redraw();
+		if (this.xrule)
+			this.xrule.redraw();
+		if (this.yrule)
+			this.yrule.redraw();
 	};
 	
 	this.constructor();
@@ -115,7 +183,8 @@ function Controller(view, xrule, yrule, config) {
 	    document.onmousemove = function(e) { this.onmousemove.call(me, e); };
 	    
 	    [view, xrule, yrule].forEach(function(item) {
-	    	item.element.onmousewheel = function(e) { this.onmousewheel.call(me, e); };
+	    	if (item)
+	    		item.element.onmousewheel = function(e) { this.onmousewheel.call(me, e); };
 	    });
 	    
 	    document.onkeydown = function(e) { this.onkeydown.call(me, e); };
@@ -157,15 +226,15 @@ function Controller(view, xrule, yrule, config) {
         var zoom = Math.pow(1 + Math.abs(wheel)/2 , wheel > 0 ? 1 : -1);
         
         var axis;
-        if (e.target == xrule.element) {
+        if (xrule && e.target == xrule.element) {
             axis = 'x';
             xrule.zoom(mousex, mousey, zoom, axis);
         }
-        else if (e.target == yrule.element) {
+        else if (yrule && e.target == yrule.element) {
             axis = 'y';
             yrule.zoom(mousex, mousey, zoom, axis);
         }
-        else {
+        else if (xrule && yrule) {
         	xrule.zoom(mousex, mousey, zoom);
         	yrule.zoom(mousex, mousey, zoom);
         }    
@@ -197,15 +266,15 @@ function Controller(view, xrule, yrule, config) {
     		var tx = (e.x - this.mouse.drag.offset.x) / this.config.dragSpeed;
     		var ty = (e.y - this.mouse.drag.offset.y) / this.config.dragSpeed;
     		
-    		if (e.target == xrule.element) {
+    		if (xrule && e.target == xrule.element) {
     			xrule.move(tx, 0);
     			view.move(tx, 0);
     		}
-    		else if (e.target == yrule.element) {
+    		else if (yrule && e.target == yrule.element) {
                 yrule.move(0, ty);
                 view.move(0, ty);
             }
-    		else if (e.target == view.element) {
+    		else if (view && e.target == view.element) {
     		    xrule.move(tx, ty);
     		    yrule.move(tx, ty);
     		    view.move(tx, ty);
@@ -881,14 +950,24 @@ function applyStyles(element, styles) {
 }
 
 function createCanvas(parent, id) {
-	var canvas = document.createElement("canvas");
-	canvas.innerHTML = "Oops ... your web browser does not support HTML5!";
+	var element = document.createElement("canvas");
+	element.innerHTML = "Oops ... your web browser does not support HTML5!";
 	if (id)
-		canvas.id = id;
+		element.id = id;
 	if (!parent)
 		parent = document.body;
-	parent.appendChild(canvas);
-	return canvas;
+	parent.appendChild(element);
+	return element;
+}
+
+function createDiv(parent, id) {
+	var element = document.createElement("div");
+	if (id)
+		element.id = id;
+	if (!parent)
+		parent = document.body;
+	parent.appendChild(element);
+	return element;
 }
 
 function constrainTo(val, min, max) {
