@@ -1,3 +1,95 @@
+function DotPlot(id, config) {
+	
+	this.constructor = function() {
+		this.element = document.getElementById(id);
+		if (!this.element) {
+			console.log("DotPlot: error: id '"+id+"' not found");
+			return;
+		}
+		
+		this.configure(config);
+		
+		// Create Plot
+		var ruleWidth = 50;
+		var plotWidth = config.size.width - ruleWidth;
+		var plotHeight = config.size.height - ruleWidth;
+		this.plot = new Plot(
+			createCanvas(this.element, 'plot'), 
+			config.chromosomes[0], config.chromosomes[1], 
+			{   size: { width: plotWidth, height: plotHeight }, 
+			    extent: config.extent,
+			    scaled: true,
+			    style: {
+			    	left: ruleWidth+"px",
+			    	top:  ruleWidth+"px",
+			    	position: "absolute"
+			    }
+			}
+		);
+	
+		// Create X and Y rulers
+		this.xrule = new Rule(
+			createCanvas(this.element, 'xrule'), 
+			{   size: { width: plotWidth, height: ruleWidth }, 
+			    extent: config.extent,
+				orientation: 'horizontal',
+				scaled: false,
+				labels: config.chromosomes[0],
+				style: {
+					left: ruleWidth+"px",
+					top:  "0px",
+					position: "absolute"
+				}
+		    }
+		);
+		this.yrule = new Rule(
+			createCanvas(this.element, 'yrule'), 
+		    {   size: { width: ruleWidth, height: plotHeight }, 
+		        extent: config.extent, 
+		        orientation: 'vertical',
+		        scaled: false,
+		        labels: config.chromosomes[1],
+		        style: {
+		        	left: "0px",
+		        	top:  ruleWidth+"px",
+		        	position: "absolute"
+		        }
+		    }
+		);
+		
+		// Setup the data fetch handler
+		this.plot.setFetch(config.fetchDataHandler);
+		
+		// Setup the UI controller
+		this.controller = new Controller(this.plot, this.xrule, this.yrule);
+	};
+	
+	this.configure = function(config) {
+		this.config = config || {};
+	
+		if (!this.config.extent) {
+			console.log("Error: please specify an extent");
+			return;
+		}
+		
+        this.config.size = this.config.size || {
+            width: 800,
+            height: 600
+        };
+        
+        if (this.config.style) {
+        	applyStyles(this.element, this.config.style);
+        }
+	};
+	
+	this.redraw = function() {
+		this.plot.redraw();
+		this.xrule.redraw();
+		this.yrule.redraw();
+	};
+	
+	this.constructor();
+}
 
 function Controller(view, xrule, yrule, config) {
 	// Common mouse and keyboard handler
@@ -7,6 +99,7 @@ function Controller(view, xrule, yrule, config) {
         this.config.dragSpeed = this.config.dragSpeed || 10;
         
 	    this.mouse = {
+	    	target: undefined,
 	        isDown: false,
 	        drag: {
 	        	offset: {
@@ -15,8 +108,6 @@ function Controller(view, xrule, yrule, config) {
 	        	}
 	        }
 	    };
-	    
-	    this.target = undefined;
 	    
 	    var me = this;
 	    document.onmousedown = function(e) { this.onmousedown.call(me, e); };
@@ -46,12 +137,12 @@ function Controller(view, xrule, yrule, config) {
     	console.log('mousedown');
     	console.log(this);
     	
-    	if (this.target) {
-    		if (e.target != this.target) {
+    	if (this.mouse.target) {
+    		if (e.target != this.mouse.target) {
     			return;
     		}
     	}
-    	this.target = e.target;
+    	this.mouse.target = e.target;
     	
         this.mouse.drag.offset.x = e.x;
         this.mouse.drag.offset.y = e.y;
@@ -86,19 +177,19 @@ function Controller(view, xrule, yrule, config) {
     	console.log('mousemove');
     	if (!this.mouse.isDown) return;
     	
-    	if (this.target && e.shiftKey) {
-	    	var x1 = e.clientX - this.target.offsetLeft;
-            var y1 = e.clientY - this.target.offsetTop;
-            var x2 = this.mouse.drag.offset.x - this.target.offsetLeft;
-            var y2 = this.mouse.drag.offset.y - this.target.offsetTop;
+    	if (this.mouse.target && e.shiftKey) {
+	    	var x1 = e.clientX - this.mouse.target.offsetLeft;
+            var y1 = e.clientY - this.mouse.target.offsetTop;
+            var x2 = this.mouse.drag.offset.x - this.mouse.target.offsetLeft;
+            var y2 = this.mouse.drag.offset.y - this.mouse.target.offsetTop;
             
-    	    if (this.target == xrule.element) {
+    	    if (this.mouse.target == xrule.element) {
                 xrule.highlight(x1, y1, x2, y2);
     	    }
-    	    else if (this.target == yrule.element) {
+    	    else if (this.mouse.target == yrule.element) {
                 yrule.highlight(x1, y1, x2, y2);
     	    }
-    	    else if (this.target == view.element) {
+    	    else if (this.mouse.target == view.element) {
                 view.highlight(x1, y1, x2, y2);
     	    }
     	}
@@ -126,29 +217,29 @@ function Controller(view, xrule, yrule, config) {
     	console.log('mouseup');
         //if (this.mouse.isDown) this.mouseClick(e);
         
-    	if (this.target && e.shiftKey) {
+    	if (this.mouse.target && e.shiftKey) {
     		if (this.mouse.isDown) {
-    			var x1 = e.clientX - this.target.offsetLeft;
-                var y1 = e.clientY - this.target.offsetTop;
-                var x2 = this.mouse.drag.offset.x - this.target.offsetLeft;
-                var y2 = this.mouse.drag.offset.y - this.target.offsetTop;
+    			var x1 = e.clientX - this.mouse.target.offsetLeft;
+                var y1 = e.clientY - this.mouse.target.offsetTop;
+                var x2 = this.mouse.drag.offset.x - this.mouse.target.offsetLeft;
+                var y2 = this.mouse.drag.offset.y - this.mouse.target.offsetTop;
                 
-    			if (this.target == xrule.element) {
+    			if (this.mouse.target == xrule.element) {
 	                xrule.select(x1, y1, x2, y2);
 	                view.select(x1, 0, x2, view.element.height);
 	    		}
-	    		else if (this.target == yrule.element) {
+	    		else if (this.mouse.target == yrule.element) {
 	                yrule.select(x1, y1, x2, y2);
 	                view.select(0, y1, view.element.width, y2);
 	    	    }
-	    		else if (this.target == view.element) {
+	    		else if (this.mouse.target == view.element) {
 	                xrule.select(x1, y1, x2, y2);
 	                yrule.select(x1, y1, x2, y2);
 	                view.select(x1, y1, x2, y2);
 	    		}
     		}
     	}
-        this.target = null;
+        this.mouse.target = null;
         this.mouse.isDown = false;
     };
     
@@ -163,10 +254,6 @@ function Drawable(element, config) {
         this.config = config || {};
         this.selectionBuffer;
 
-        if (this.config.style) {
-        	applyStyles(this.element, this.config.style);
-        }
-        
         this.config.size = this.config.size || {
             width: 800,
             height: 50
@@ -402,7 +489,7 @@ function Rule(element, config) {
 	    this.element = element;
 	    this.configure(config);
 		this.drawable = new Drawable(element, config);
-		this.drawable.setRenderer(this, this.draw);
+		this.drawable.setRenderer(this, this.redraw);
 	}
     
     this.configure = function(config) {
@@ -418,6 +505,10 @@ function Rule(element, config) {
         		this.labels.push({ pos: pos, text: label.name });
         		pos += label.length/2;
         	}
+        }
+        
+        if (this.config.style) {
+        	applyStyles(this.element, this.config.style);
         }
     };
     
@@ -448,7 +539,7 @@ function Rule(element, config) {
 		drawText(ctx, toUnits(pos), x, element.height-13, { rotate: 45, font: '6pt Arial'});
 	}
 	
-	this.draw = function() {
+	this.redraw = function() {
 		// Draw ruler tick marks/labels
 		var ctx = this.drawable.context;
 		ctx.lineWidth = .2;
@@ -497,9 +588,14 @@ function Rule(element, config) {
     this.drawable.redraw();
 }
 
-function DotPlot(element, chr1, chr2, config) {
+function Plot(element, chr1, chr2, config) {
     this.constructor = function() {
         this.element = element;
+        if (!this.element) {
+        	console.log("Plot: error: id '"+id+"' not found");
+			return;
+        }
+        
         this.configure(config);
         this.drawable = new Drawable(element, config);
 		this.drawable.setRenderer(this, this.render);
@@ -510,6 +606,10 @@ function DotPlot(element, chr1, chr2, config) {
         
         this.chr1 = chr1;
         this.chr2 = chr2;
+        
+        if (this.config.style) {
+        	applyStyles(this.element, this.config.style);
+        }
     };
 
     this.drawChromosomes = function() {
@@ -562,9 +662,12 @@ function DotPlot(element, chr1, chr2, config) {
     };
     
     this.render = function() {
-    	if (!this.fetch) return;
+    	if (!this.fetch) {
+    		console.log('Plot: no fetch handler');
+    		return;
+    	}
 
-    	//var startTime = Date.now();
+    	var startTime = Date.now();
     	
         var data = this.fetch(this.drawable.origin.x, this.drawable.origin.y,
                 			  this.drawable.view.width, this.drawable.view.height );
@@ -573,7 +676,7 @@ function DotPlot(element, chr1, chr2, config) {
         this.drawLines(data, this.drawable.scale.x, this.drawable.scale.y); //this.drawDots();
         this.drawBorder();
         
-        //console.log('render time: ' + (Date.now() - startTime));
+        console.log('render time: ' + (Date.now() - startTime));
     };
     
     this.redraw = function() {
@@ -775,6 +878,17 @@ function applyStyles(element, styles) {
 		//alert(prop + " is " + styles[prop]);
 		element.style[prop] = styles[prop];
 	}
+}
+
+function createCanvas(parent, id) {
+	var canvas = document.createElement("canvas");
+	canvas.innerHTML = "Oops ... your web browser does not support HTML5!";
+	if (id)
+		canvas.id = id;
+	if (!parent)
+		parent = document.body;
+	parent.appendChild(canvas);
+	return canvas;
 }
 
 function constrainTo(val, min, max) {

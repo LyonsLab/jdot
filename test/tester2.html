@@ -1,0 +1,118 @@
+<html>
+<body>
+
+<div>
+    Number of points: <input id='num_points' size='15'>
+    <button onclick='setPoints();'>Run</button><br>
+    <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
+</div>
+
+<div id='dotplot'></div>
+
+<script src="../src/dotplot2.js"></script>
+<script>
+var initData = init_array;
+var fetchData = fetch_array;
+
+var gu1 = 2*1000*1000;
+var gu2 = 3*1000*1000;
+var chromosomes1 = [ 
+    { name: '1', length: 100000 },
+    { name: '2', length: 200000 },
+    { name: '3', length: 300000 },
+    { name: '4', length: 1400000 }
+];
+var chromosomes2 = [ 
+    { name: 'a', length: 200000 },
+    { name: 'b', length: 250000 },
+    { name: 'c', length: 350000 },
+    { name: 'd', length: 2200000 }
+];
+
+var maxTiles = 100;
+var tileColSize = Math.floor(gu1/maxTiles);
+var tileRowSize = Math.floor(gu2/maxTiles);
+
+var dotplot = new DotPlot('dotplot', {
+	size: { width: 1000, height: 800 },
+	extent: { width: gu1, height: gu2 },
+	chromosomes: [ chromosomes1, chromosomes2 ],
+	fetchDataHandler: fetchData,
+    style: {
+        top: "50px",
+        position: "absolute"
+    }
+});
+
+var data;
+var tiles;
+setPoints(10*1000);
+
+
+	
+//------------------------------------------------------------------------------
+
+function init_array(n) {
+    // Generate some random data points
+    data = [];
+    for (var i=0; i < n; i++) {
+        var x1 = Math.floor( Math.random() * gu1 );
+        var y1 = Math.floor( Math.random() * gu2 );
+        var x2 = x1 + Math.floor( Math.random() * 1000 );
+        var y2 = y1 + Math.floor( Math.random() * 1000 );
+        data.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
+    }
+}
+
+function fetch_array(x, y, width, height) {
+    return data;
+}
+
+function init_tiles(n) {
+    // Generate some random data points
+    tiles = [];
+    for (var i=0; i < n; i++) {
+        var x = Math.floor( Math.random() * gu1 );
+        var y = Math.floor( Math.random() * gu2 );
+        var col = Math.floor(x/tileColSize);
+        var row = Math.floor(y/tileRowSize);
+        var t = row * maxTiles + col;
+        if (!tiles[t])
+        	tiles[t] = [];
+        tiles[t].push({ x: x, y: y});
+    }
+}
+
+function fetch_tiles(x, y, width, height) {
+	var col1 = int(x/tileColSize);
+	var row1 = int(y/tileRowSize);
+	var col2 = col1 + Math.ceil(width/tileColSize);
+	var row2 = row1 + Math.ceil(height/tileRowSize);
+	var data = [];
+	for (var r = row1; r <= row2; r++) {
+		for (var c = col1; c <= col2; c++) {
+			var t = r * maxTiles + c;
+            if (tiles[t]) {
+            	for (var i = 0; i < tiles[t].length; i++)
+            	    data.push(tiles[t][i]);
+            }
+		}
+	}
+    return data;
+}
+
+function setPoints(n) {
+	if (n) 
+		document.getElementById('num_points').value = n;
+	else
+		n = document.getElementById('num_points').value;
+	
+	initData(n);
+	dotplot.redraw();
+}
+</script>
+
+</body>
+</html>
+
+
