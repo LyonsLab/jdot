@@ -240,6 +240,7 @@ function Controller(view, xrule, yrule, config) {
         }    
         
         view.zoom(mousex, mousey, zoom, axis);
+        e.preventDefault();
     };
 
     this.onmousemove = function onmousemove(e) {
