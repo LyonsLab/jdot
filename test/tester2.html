@@ -7,6 +7,7 @@
     <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
 </div>
 
+<div id='mtulidotplot'></div>
 <div id='dotplot'></div>
 
 <script src="../src/dotplot2.js"></script>
@@ -33,46 +34,50 @@ var maxTiles = 100;
 var tileColSize = Math.floor(gu1/maxTiles);
 var tileRowSize = Math.floor(gu2/maxTiles);
 
-/* var dotplot = new DotPlot('dotplot', {
+var dotplot = new DotPlot('dotplot', {
 	size: { width: 1000, height: 800 },
 	extent: { width: gu1, height: gu2 },
 	chromosomes: [ chromosomes1, chromosomes2 ],
 	fetchDataHandler: fetchData,
     style: {
-        top: "50px",
-        position: "absolute"
+        top: "530px",
+        position: "relative"
     }
-}); */
+});
 
-var dotplot = new MultiDotPlot('dotplot', {
+/* var multidotplot = new MultiDotPlot('mtulidotplot', {
     size: { width: 1000, height: 800 },
     genomes: [
         {
+        	name: 'test1',
             extent: gu1,
             chromosomes: [ chromosomes1, chromosomes2 ],
             fetchDataHandler: fetchData,
         },
         {
+        	name: 'test2',
             extent: gu2,
             chromosomes: [ chromosomes1, chromosomes2 ],
             fetchDataHandler: fetchData,
         },
         {
+        	name: 'test1',
             extent: gu1,
             chromosomes: [ chromosomes1, chromosomes2 ],
             fetchDataHandler: fetchData,
         },
         {
+        	name: 'test2',
             extent: gu2,
             chromosomes: [ chromosomes1, chromosomes2 ],
             fetchDataHandler: fetchData,
         }
     ],
     style: {
-        top: "50px",
+        top: "0px",
         position: "relative"
     }
-});
+}); */
 
 var data;
 var tiles;
@@ -137,6 +142,7 @@ function setPoints(n) {
 	
 	initData(n);
 	dotplot.redraw();
+	//multidotplot.redraw();
 }
 </script>
 

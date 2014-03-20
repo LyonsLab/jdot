@@ -20,7 +20,6 @@ function MultiDotPlot(id, config) {
 		for (var i = 0; i < numGenomes-1; i++) {
 			for (var j = 1;  j < numGenomes; j++) {
 				var genome1 = this.config.genomes[i];
-				console.log(genome1);
 				var genome2 = this.config.genomes[j];
 				var div = createDiv(this.element, this.element.id+'_'+i+'_'+j);
 				var dotplot = new DotPlot(div.id, {
@@ -60,7 +59,6 @@ function MultiDotPlot(id, config) {
 	};
 	
 	this.constructor();
-	this.redraw();
 }
 
 function DotPlot(id, config) {
@@ -73,16 +71,20 @@ function DotPlot(id, config) {
 		
 		this.configure(config);
 		
+		// Setup the UI controller
+		this.controller = new Controller();
+		
 		// Create Plot
 		var ruleWidth = (config.disableRulers ? 0 : 50);
 		var plotWidth = config.size.width - ruleWidth;
 		var plotHeight = config.size.height - ruleWidth;
 		this.plot = new Plot(
-			createCanvas(this.element, 'plot'), 
+			createCanvas(this.element, 'plot'+generateID()), 
 			config.chromosomes[0], config.chromosomes[1], 
 			{   size: { width: plotWidth, height: plotHeight }, 
 			    extent: config.extent,
 			    scaled: true,
+			    fetchDataHandler: config.fetchDataHandler,
 			    style: {
 			    	left: ruleWidth+"px",
 			    	top:  ruleWidth+"px",
@@ -90,11 +92,12 @@ function DotPlot(id, config) {
 			    }
 			}
 		);
+		this.controller.addListener(this.plot.drawable);
 	
 		// Create X and Y rulers
 		if (!config.disableRulers) {
 			this.xrule = new Rule(
-				createCanvas(this.element, 'xrule'), 
+				createCanvas(this.element, 'xrule'+generateID()), 
 				{   size: { width: plotWidth, height: ruleWidth }, 
 				    extent: config.extent,
 					orientation: 'horizontal',
@@ -107,8 +110,10 @@ function DotPlot(id, config) {
 					}
 			    }
 			);
+			this.controller.addListener(this.xrule.drawable);
+			
 			this.yrule = new Rule(
-				createCanvas(this.element, 'yrule'), 
+				createCanvas(this.element, 'yrule'+generateID()), 
 			    {   size: { width: ruleWidth, height: plotHeight }, 
 			        extent: config.extent, 
 			        orientation: 'vertical',
@@ -121,13 +126,8 @@ function DotPlot(id, config) {
 			        }
 			    }
 			);
+			this.controller.addListener(this.yrule.drawable);
 		}
-		
-		// Setup the data fetch handler
-		this.plot.setFetch(config.fetchDataHandler);
-		
-		// Setup the UI controller
-		this.controller = new Controller(this.plot, this.xrule, this.yrule);
 	};
 	
 	this.configure = function(config) {
@@ -159,7 +159,7 @@ function DotPlot(id, config) {
 	this.constructor();
 }
 
-function Controller(view, xrule, yrule, config) {
+function Controller(drawables, config) {
 	// Common mouse and keyboard handler
 	this.constructor = function() {
 		this.config = config || {};
@@ -170,10 +170,8 @@ function Controller(view, xrule, yrule, config) {
 	    	target: undefined,
 	        isDown: false,
 	        drag: {
-	        	offset: {
-	        		x: 0,
-	        		y: 0
-	        	}
+	        	x: 0,
+	        	y: 0
 	        }
 	    };
 	    
@@ -182,7 +180,8 @@ function Controller(view, xrule, yrule, config) {
 	    document.onmouseup   = function(e) { this.onmouseup.call(me, e);   };
 	    document.onmousemove = function(e) { this.onmousemove.call(me, e); };
 	    
-	    [view, xrule, yrule].forEach(function(item) {
+	    this.drawables = drawables || [];
+	    this.drawables.forEach(function(item) {
 	    	if (item)
 	    		item.element.onmousewheel = function(e) { this.onmousewheel.call(me, e); };
 	    });
@@ -190,125 +189,160 @@ function Controller(view, xrule, yrule, config) {
 	    document.onkeydown = function(e) { this.onkeydown.call(me, e); };
 	};
 	
+	this.addListener = function(d) {
+		this.drawables.push(d);
+		var me = this;
+		d.element.onmousewheel = function(e) { this.onmousewheel.call(me, e); };
+	};
+	
+    this._getDrawableById = function(id) {
+        var found;
+        this.drawables.some(function(d) {
+        	if (d.element.id == id) {
+        		found = d;
+        		return true;
+        	}
+        });
+        return found;
+    };
+	
 	this.onkeydown = function(e) {
 		console.log('keydown');
+		var tx = 0, ty = 0;
 	    switch(e.keyCode) {
-	        case 37: view.move( 5,  0 ); break; // left
-	        case 38: view.move( 0,  5 ); break; // up
-	        case 39: view.move( -5, 0 ); break; // right
-	        case 40: view.move( 0, -5 ); break; // down
+	        case 37: tx = 5;  ty = 0;  break; // left
+	        case 38: tx = 0,  ty = 5;  break; // up
+	        case 39: tx = -5; ty = 0;  break; // right
+	        case 40: tx = 0;  ty = -5; break; // down
 	    }
-	    
-	    view.redraw();
+		
+        this.drawables.forEach(function(d) {
+        	if (d.config.orientation == 'both')
+        		d.move(tx, ty);
+        });
+        
+        e.preventDefault();
 	};
 	
     this.onmousedown = function(e) {
-    	console.log('mousedown');
-    	console.log(this);
-    	
+    	//console.log('mousedown');
     	if (this.mouse.target) {
     		if (e.target != this.mouse.target) {
     			return;
     		}
     	}
-    	this.mouse.target = e.target;
     	
-        this.mouse.drag.offset.x = e.x;
-        this.mouse.drag.offset.y = e.y;
+    	this.mouse.target = e.target;
+    	var loc = e.target.getBoundingClientRect();
+        this.mouse.drag.x = e.x - loc.left;
+        this.mouse.drag.y = e.y - loc.top;
         this.mouse.isDown = true;
     };
 
-    this.onmousewheel = function onmousewheel(e) {
+    this.onmousewheel = function(e) {
     	console.log('mousewheel');
-    	var mousex = e.clientX - e.target.offsetLeft;
-        var mousey = e.clientY - e.target.offsetTop;
+    	var loc = e.target.getBoundingClientRect();
+    	var mousex = e.x - loc.left;
+        var mousey = e.y - loc.top;
         var wheel = e.wheelDelta / this.config.zoomSpeed;
         var zoom = Math.pow(1 + Math.abs(wheel)/2 , wheel > 0 ? 1 : -1);
         
-        var axis;
-        if (xrule && e.target == xrule.element) {
-            axis = 'x';
-            xrule.zoom(mousex, mousey, zoom, axis);
-        }
-        else if (yrule && e.target == yrule.element) {
-            axis = 'y';
-            yrule.zoom(mousex, mousey, zoom, axis);
-        }
-        else if (xrule && yrule) {
-        	xrule.zoom(mousex, mousey, zoom);
-        	yrule.zoom(mousex, mousey, zoom);
-        }    
+        var selected = this._getDrawableById(e.target.id);
+        if (!selected)
+        	return;
         
-        view.zoom(mousex, mousey, zoom, axis);
+        this.drawables.forEach(function(d) {
+        	if (d.config.orientation == selected.config.orientation 
+        			|| d.config.orientation == 'both' 
+        			|| selected.config.orientation == 'both') 
+        	{
+        		d.zoom(mousex, mousey, zoom, selected.config.orientation);
+        	}
+        });
+        
         e.preventDefault();
     };
 
-    this.onmousemove = function onmousemove(e) {
-    	console.log('mousemove');
+    this.onmousemove = function(e) {
     	if (!this.mouse.isDown) return;
     	
-    	if (this.mouse.target && e.shiftKey) {
-	    	var x1 = e.clientX - this.mouse.target.offsetLeft;
-            var y1 = e.clientY - this.mouse.target.offsetTop;
-            var x2 = this.mouse.drag.offset.x - this.mouse.target.offsetLeft;
-            var y2 = this.mouse.drag.offset.y - this.mouse.target.offsetTop;
-            
-    	    if (this.mouse.target == xrule.element) {
-                xrule.highlight(x1, y1, x2, y2);
-    	    }
-    	    else if (this.mouse.target == yrule.element) {
-                yrule.highlight(x1, y1, x2, y2);
-    	    }
-    	    else if (this.mouse.target == view.element) {
-                view.highlight(x1, y1, x2, y2);
-    	    }
+        if (!this.mouse.target)
+        	return;
+        var loc = this.mouse.target.getBoundingClientRect();
+        
+        var selected = this._getDrawableById(e.target.id);
+        if (!selected)
+        	return;
+        
+    	if (e.shiftKey) {
+        	var x1 = e.x - loc.left;
+            var y1 = e.y - loc.top;
+            var x2 = this.mouse.drag.x;
+            var y2 = this.mouse.drag.y;
+            console.log('mousemove '+x1+' '+y1+' '+x2+' '+y2);
+    	    
+            selected.highlight(x1, y1, x2, y2);
     	}
     	else {
-    		var tx = (e.x - this.mouse.drag.offset.x) / this.config.dragSpeed;
-    		var ty = (e.y - this.mouse.drag.offset.y) / this.config.dragSpeed;
+    		//console.log('mousemove');
+    		var tx = (e.x - loc.left - this.mouse.drag.x) / this.config.dragSpeed;
+    		var ty = (e.y - loc.top - this.mouse.drag.y) / this.config.dragSpeed;
     		
-    		if (xrule && e.target == xrule.element) {
-    			xrule.move(tx, 0);
-    			view.move(tx, 0);
-    		}
-    		else if (yrule && e.target == yrule.element) {
-                yrule.move(0, ty);
-                view.move(0, ty);
-            }
-    		else if (view && e.target == view.element) {
-    		    xrule.move(tx, ty);
-    		    yrule.move(tx, ty);
-    		    view.move(tx, ty);
-    		}
+            if (selected.config.orientation == 'horizontal')
+            	ty = 0;
+            else if (selected.config.orientation == 'vertical')
+            	tx = 0;
+            
+            this.drawables.forEach(function(d) {
+            	if (d.config.orientation == selected.config.orientation 
+            			|| d.config.orientation == 'both' 
+            			|| selected.config.orientation == 'both') 
+            	{
+            		d.move(tx, ty);
+            	}
+            });
     	}
     };
 
-    this.onmouseup = function onmouseup(e) {
-    	console.log('mouseup');
+    this.onmouseup = function(e) {
+    	//console.log('mouseup');
         //if (this.mouse.isDown) this.mouseClick(e);
+    	
+        if (!this.mouse.target)
+        	return;
+        var loc = this.mouse.target.getBoundingClientRect();
         
-    	if (this.mouse.target && e.shiftKey) {
+        var selected = this._getDrawableById(e.target.id);
+        if (!selected)
+        	return;
+        
+    	if (e.shiftKey) {
     		if (this.mouse.isDown) {
-    			var x1 = e.clientX - this.mouse.target.offsetLeft;
-                var y1 = e.clientY - this.mouse.target.offsetTop;
-                var x2 = this.mouse.drag.offset.x - this.mouse.target.offsetLeft;
-                var y2 = this.mouse.drag.offset.y - this.mouse.target.offsetTop;
+    			var x1 = e.x - loc.left;
+                var y1 = e.y - loc.top;
+                var x2 = this.mouse.drag.x;
+                var y2 = this.mouse.drag.y;
                 
-    			if (this.mouse.target == xrule.element) {
-	                xrule.select(x1, y1, x2, y2);
-	                view.select(x1, 0, x2, view.element.height);
-	    		}
-	    		else if (this.mouse.target == yrule.element) {
-	                yrule.select(x1, y1, x2, y2);
-	                view.select(0, y1, view.element.width, y2);
-	    	    }
-	    		else if (this.mouse.target == view.element) {
-	                xrule.select(x1, y1, x2, y2);
-	                yrule.select(x1, y1, x2, y2);
-	                view.select(x1, y1, x2, y2);
-	    		}
+                if (selected.config.orientation == 'horizontal') {
+                	y1 = 0;
+                	y2 = Number.MAX_VALUE;
+                }
+                else if (selected.config.orientation == 'vertical') {
+                	x1 = 0;
+                	x2 = Number.MAX_VALUE;
+                }
+                
+                this.drawables.forEach(function(d) {
+                	if (d.config.orientation == selected.config.orientation 
+                			|| d.config.orientation == 'both' 
+                			|| selected.config.orientation == 'both') 
+                	{
+                		d.select(x1, y1, x2, y2);
+                	}
+                });
     		}
     	}
+    	
         this.mouse.target = null;
         this.mouse.isDown = false;
     };
@@ -368,7 +402,7 @@ function Drawable(element, config) {
     	y1 = constrainTo(y1, 0, this.config.size.height-1);
     	x2 = constrainTo(x2, 0, this.config.size.width-1);
     	y2 = constrainTo(y2, 0, this.config.size.height-1);
-        console.log('highlight: '+x1+','+y1+' '+x2+','+y2);
+    	//console.log('highlight: '+x1+','+y1+' '+x2+','+y2);
 
         var x = Math.min(x1, x2),
             y = Math.min(y1, y2),
@@ -396,7 +430,6 @@ function Drawable(element, config) {
     }
     
     this.select = function(x1, y1, x2, y2) {
-    	console.log('select: '+x1+' '+y1+' '+x2+' '+y2);
     	x1 = constrainTo(x1, 0, this.config.size.width-1);
     	y1 = constrainTo(y1, 0, this.config.size.height-1);
     	x2 = constrainTo(x2, 0, this.config.size.width-1);
@@ -430,7 +463,7 @@ function Drawable(element, config) {
     	
     	this.origin.x = tx;
     	this.origin.y = ty;
-    	console.log('select: '+x+','+y+','+width+','+height+' t='+tx+','+ty+' '+this.scale.x+' '+this.scale.y);
+    	//console.log('select: '+x+','+y+','+width+','+height+' t='+tx+','+ty+' '+this.scale.x+' '+this.scale.y);
     	
     	clearSelection();
     	
@@ -438,6 +471,7 @@ function Drawable(element, config) {
     };
     
     this.zoom = function(x, y, zoom, axis) {
+    	console.log('zoom: '+x+' '+y+' '+zoom);
         var xzoom, yzoom;
         xzoom = yzoom = zoom;
 
@@ -455,13 +489,13 @@ function Drawable(element, config) {
             yzoom = newYScale / this.scale.y;
         }
 
-        if (axis == 'x') {
+        if (axis == 'horizontal') {
         	yzoom = 1;
         	newYScale = this.scale.y;
         }
-        else if (axis == 'y') {
+        else if (axis == 'vertical') {
         	xzoom = 1;
-        	newXScale = this.scale.x;       	
+        	newXScale = this.scale.x;
         }
         
         var tx = ( x / this.scale.x + this.origin.x - x / newXScale );
@@ -510,14 +544,14 @@ function Drawable(element, config) {
 	        }
         }        
         
-        console.log("zoom " + this.element.id + ": zoom="+zoom+" xzoom="+xzoom+" yzoom="+yzoom+" scale="+this.scale.x + "," + this.scale.y + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y)
+        //console.log("zoom " + this.element.id + ": zoom="+zoom+" xzoom="+xzoom+" yzoom="+yzoom+" scale="+this.scale.x + "," + this.scale.y + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y)
     
         this.redraw();
     };
     
     this.move = function(tx, ty) {
     	if (this.isMinScale()) return; // can't move, zoomed-out all the way
-    	//console.log("mousemove: e=" + e.x + "," + e.y + " trans=" + tx + "," + ty + " origin=" + this.origin.x + "," + this.origin.y + " scale=" + this.scale);
+    	console.log("move: " + tx + " " + ty);
     	
         tx = tx / this.scale.x;
         ty = ty / this.scale.y;
@@ -526,7 +560,7 @@ function Drawable(element, config) {
     }
     
     this.translate = function translate(x, y) {
-        console.log("translate: x,y=" + x + "," + y + " origin=" + this.origin.x + "," + this.origin.y + " scale=" + this.scale.x + ',' + this.scale.y + " w,h=" + this.view.width + "," + this.view.height);
+    	//console.log("translate: x,y=" + x + "," + y + " origin=" + this.origin.x + "," + this.origin.y + " scale=" + this.scale.x + ',' + this.scale.y + " w,h=" + this.view.width + "," + this.view.height);
 
         // Check bounds
         if (this.origin.x - x < 0)
@@ -668,6 +702,7 @@ function Plot(element, chr1, chr2, config) {
         
         this.configure(config);
         this.drawable = new Drawable(element, config);
+        this.setFetch(config.fetchDataHandler);
 		this.drawable.setRenderer(this, this.render);
     };
     
@@ -734,10 +769,11 @@ function Plot(element, chr1, chr2, config) {
     this.render = function() {
     	if (!this.fetch) {
     		console.log('Plot: no fetch handler');
+    		console.log(this);
     		return;
     	}
 
-    	var startTime = Date.now();
+    	//var startTime = Date.now();
     	
         var data = this.fetch(this.drawable.origin.x, this.drawable.origin.y,
                 			  this.drawable.view.width, this.drawable.view.height );
@@ -746,7 +782,7 @@ function Plot(element, chr1, chr2, config) {
         this.drawLines(data, this.drawable.scale.x, this.drawable.scale.y); //this.drawDots();
         this.drawBorder();
         
-        console.log('render time: ' + (Date.now() - startTime));
+        //console.log('render time: ' + (Date.now() - startTime));
     };
     
     this.redraw = function() {
@@ -860,6 +896,7 @@ function restoreSelection(context) {
 }
 
 function saveSelection(context, x, y , width, height) {
+	console.log('saveSelection '+x+' '+y+' '+width+' '+height);
     this.selectionBuffer = [x, y, context.getImageData(x, y, width, height)];
 }
 
@@ -977,6 +1014,11 @@ function constrainTo(val, min, max) {
 	if (val >= max)
 		return max;
 	return val;
+}
+
+var id = 1;
+function generateID() {
+	return id++;
 }
 
 //Array.prototype.clipTo=(function(r2) {
