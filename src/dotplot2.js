@@ -770,14 +770,21 @@ function Plot(element, config) {
     this.drawLines = function(data, xscale, yscale) {
         if (!data) return;
 
-        var ctx = this.drawable.context;
-        for (var i = 0; i < data.length; i++) {
-            var x1 = data[i].x1;
-            var y1 = data[i].y1;
-            var x2 = data[i].x2;
-            var y2 = data[i].y2;
+        var ctx = this.drawable.context,
+            scalar = Math.max(this.drawable.scale.x, this.drawable.scale.y),
+            i,
+            x1,
+            x2,
+            y1,
+            y2;
 
-            ctx.lineWidth = 1 / Math.max(yscale, xscale);
+        for (i = 0; i < data.length; i++) {
+            x1 = data[i].x1;
+            y1 = data[i].y1;
+            x2 = data[i].x2;
+            y2 = data[i].y2;
+
+            ctx.lineWidth = 1 / scalar;
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
@@ -788,14 +795,20 @@ function Plot(element, config) {
     this.drawRects = function(data, xscale) {
         if (!data) return;
 
-        var ctx = this.drawable.context;
-        for (var i = 0; i < data.length; i++) {
-            var x = data[i][0];
-            var y = data[i][1];
-            var width = data[i][2];
-            var height = data[i][3];
+        var ctx = this.drawable.context,
+            scalar = Math.max(this.drawable.scale.x, this.drawable.scale.y),
+            x,
+            y,
+            width,
+            height;
 
-            ctx.lineWidth = 2 / xscale;
+        for (i = 0; i < data.length; i++) {
+            x = data[i][0];
+            y = data[i][1];
+            width = data[i][2];
+            height = data[i][3];
+
+            ctx.lineWidth = 2 / scalar;
             ctx.strokeRect(x, y, width, height);
         }
     };
@@ -822,8 +835,8 @@ function Plot(element, config) {
             this.drawable.context.save();
             applyProperties(this.drawable.context, layers[i].style);
             this.drawDots(layers[i].points);
-            this.drawLines(layers[i].lines, this.xscale, this.yscale);
-            this.drawRects(layers[i].rects, this.xscale);
+            this.drawLines(layers[i].lines);
+            this.drawRects(layers[i].rects);
             this.drawable.context.restore();
         }
 
