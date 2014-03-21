@@ -87,7 +87,9 @@ function init_array(n) {
 }
 
 function fetch_array(x, y, width, height) {
-    return data;
+    return [{
+        lines: data
+    }];
 }
 
 function setPoints(n) {
