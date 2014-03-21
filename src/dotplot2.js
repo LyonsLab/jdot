@@ -777,19 +777,34 @@ function Plot(element, config) {
             var x2 = data[i].x2;
             var y2 = data[i].y2;
 
-            ctx.lineWidth = 1 / xscale;
+            ctx.lineWidth = 1 / Math.max(yscale, xscale);
             ctx.beginPath();
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             ctx.stroke();
         }
     };
-    
+
+    this.drawRects = function(data, xscale) {
+        if (!data) return;
+
+        var ctx = this.drawable.context;
+        for (var i = 0; i < data.length; i++) {
+            var x = data[i][0];
+            var y = data[i][1];
+            var width = data[i][2];
+            var height = data[i][3];
+
+            ctx.lineWidth = 2 / xscale;
+            ctx.strokeRect(x, y, width, height);
+        }
+    };
+
     this.drawBorder = function() {
         // Draw frame around canvas
     	drawScaledRect(this.drawable.context, 0, 0, this.config.extent.width, this.config.extent.height, this.drawable.scale.x, this.drawable.scale.y);
     };
-    
+
     this.render = function() {
     	if (!this.fetch) {
     		console.log('Plot: no fetch handler');
@@ -798,17 +813,24 @@ function Plot(element, config) {
     	}
 
     	//var startTime = Date.now();
-    	
-        var data = this.fetch(this.drawable.origin.x, this.drawable.origin.y,
-                			  this.drawable.view.width, this.drawable.view.height );
-
+        var layers = this.fetch(this.drawable.origin.x, this.drawable.origin.y,
+                                this.drawable.view.width, this.drawable.view.height );
         this.drawChromosomes();
-        this.drawLines(data, this.drawable.scale.x, this.drawable.scale.y); //this.drawDots();
+
+        // Draw all layers returned from the fetch
+        for(index = 0; index < layers.length; index++) {
+            this.drawable.context.save();
+            applyProperties(this.drawable.context, layers[index].style);
+            this.drawDots(layers[index].points);
+            this.drawLines(layers[index].lines, this.xscale, this.yscale);
+            this.drawRects(layers[index].rects, this.xscale);
+            this.drawable.context.restore();
+        }
+
         this.drawBorder();
-        
         //console.log('render time: ' + (Date.now() - startTime));
     };
-    
+
     this.redraw = function() {
     	this.drawable.redraw();
     };
@@ -1003,11 +1025,14 @@ function measureText(text, bold, font, size)
     return size;
 }
 
+function applyProperties(element, properties) {
+    for (var prop in properties) {
+        element[prop] = properties[prop];
+    }
+}
+
 function applyStyles(element, styles) {
-	for (var prop in styles) {
-		//alert(prop + " is " + styles[prop]);
-		element.style[prop] = styles[prop];
-	}
+    applyProperties(element.style, styles);
 }
 
 function createCanvas(parent, id) {
