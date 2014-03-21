@@ -4,8 +4,7 @@
 <div>
     Number of points: <input id='num_points' size='15'>
     <button onclick='setPoints();'>Run</button><br>
-    <label>Reset the zoom level:</label>
-    <button onclick='resetSize();'>Reset</button><br>
+    <button onclick='resetSize();'>Reset zoom</button><br>
     <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
 </div>
 
@@ -56,7 +55,7 @@ setPoints(10*1000);
 function init_array(n) {
     // Generate some random data points
     data = [];
-    for (var i=0; i < n; i++) {
+    for (var i = 0; i < n; i++) {
         var x1 = Math.floor( Math.random() * gu1 );
         var y1 = Math.floor( Math.random() * gu2 );
         var x2 = x1 + Math.max( 100, Math.floor( Math.random() * 1000 ) );

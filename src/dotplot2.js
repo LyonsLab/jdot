@@ -240,21 +240,6 @@ function Controller(drawables, config) {
         //e.preventDefault();
 	};
 	
-    this.onmousedown = function(e) {
-    	//console.log('mousedown');
-    	if (this.mouse.target) {
-    		if (e.target != this.mouse.target) {
-    			return;
-    		}
-    	}
-    	
-    	this.mouse.target = e.target;
-    	var loc = e.target.getBoundingClientRect();
-        this.mouse.drag.x = e.x - loc.left;
-        this.mouse.drag.y = e.y - loc.top;
-        this.mouse.isDown = true;
-    };
-
     this.onmousewheel = function(e) {
     	//console.log('mousewheel');
     	var loc = e.target.getBoundingClientRect();
@@ -278,17 +263,28 @@ function Controller(drawables, config) {
         
         e.preventDefault();
     };
+    
+    this.onmousedown = function(e) {
+    	//console.log('mousedown');
+    	if (this.mouse.target && e.target != this.mouse.target)
+    		return;
+    	
+    	this.mouse.target = e.target;
+    	var loc = e.target.getBoundingClientRect();
+        this.mouse.drag.x = e.x - loc.left;
+        this.mouse.drag.y = e.y - loc.top;
+        this.mouse.isDown = true;
+    };
 
     this.onmousemove = function(e) {
-    	if (!this.mouse.isDown) return;
-    	
-        if (!this.mouse.target)
-        	return;
-        var loc = this.mouse.target.getBoundingClientRect();
+    	if (!this.mouse.isDown || !this.mouse.target) 
+    		return;
         
         var selected = this._getDrawableById(this.mouse.target.id);
         if (!selected)
         	return;
+        
+        var loc = this.mouse.target.getBoundingClientRect();
         
     	if (e.shiftKey) {
         	var x1 = e.x - loc.left;
@@ -323,17 +319,23 @@ function Controller(drawables, config) {
     this.onmouseup = function(e) {
     	//console.log('mouseup');
         //if (this.mouse.isDown) this.mouseClick(e);
+    	var isDown = this.mouse.isDown;
+    	this.mouse.isDown = false;
     	
         if (!this.mouse.target)
         	return;
-        var loc = this.mouse.target.getBoundingClientRect();
         
-        var selected = this._getDrawableById(this.mouse.target.id);
+        var target = this.mouse.target;
+        this.mouse.target = null;
+        
+        var selected = this._getDrawableById(target.id);
         if (!selected)
         	return;
         
+        var loc = target.getBoundingClientRect();
+        
     	if (e.shiftKey) {
-    		if (this.mouse.isDown) {
+    		if (isDown) {
     			var x1 = e.x - loc.left;
                 var y1 = e.y - loc.top;
                 var x2 = this.mouse.drag.x;
@@ -358,9 +360,6 @@ function Controller(drawables, config) {
                 });
     		}
     	}
-    	
-        this.mouse.target = null;
-        this.mouse.isDown = false;
     };
     
 	this.constructor();
