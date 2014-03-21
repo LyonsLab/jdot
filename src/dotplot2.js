@@ -88,9 +88,9 @@ function DotPlot(id, config) {
 		var genome2 = config.genomes[1];
 		this.plot = new Plot(
 			createCanvas(this.element, 'plot'+generateID()),
-			genome1.chromosomes, genome2.chromosomes, // FIXME: move into config and make generic
 			{   size: { width: plotWidth, height: plotHeight }, 
 			    extent: { width: genome1.length, height: genome2.length },
+			    labels: { x: genome1.chromosomes, y: genome2.chromosomes },
 			    scaled: true,
 			    fetchDataHandler: config.fetchDataHandler,
 			    style: {
@@ -717,7 +717,7 @@ function Rule(element, config) {
     this.drawable.redraw();
 }
 
-function Plot(element, chr1, chr2, config) {
+function Plot(element, config) {
     this.constructor = function() {
         this.element = element;
         if (!this.element) {
@@ -734,9 +734,6 @@ function Plot(element, chr1, chr2, config) {
     this.configure = function(config) {
         this.config = config || {};
         
-        this.chr1 = chr1;
-        this.chr2 = chr2;
-        
         if (this.config.style) {
         	applyStyles(this.element, this.config.style);
         }
@@ -746,13 +743,15 @@ function Plot(element, chr1, chr2, config) {
     	var ctx = this.drawable.context;
         //ctx.imageSmoothingEnabled = false;
         ctx.lineWidth = 1 / this.drawable.scale.x / 2; // same size regardless of zoom
-        for (var i = 0, x = 0; i < this.chr1.length-1; i++) {
-        	x += this.chr1[i].length;
+        var labels = this.config.labels.x;
+        for (var i = 0, x = 0; i < labels.length-1; i++) {
+        	x += labels[i].length;
         	drawLine(ctx, x, 1, x, this.config.extent.height-1);
         }
+        labels = this.config.labels.y;
         ctx.lineWidth = 1 / this.drawable.scale.y / 2; // same size regardless of zoom
-        for (var i = 0, y = 0; i < this.chr2.length-1; i++) {
-        	y += this.chr2[i].length;
+        for (var i = 0, y = 0; i < labels.length-1; i++) {
+        	y += labels[i].length;
         	drawLine(ctx, 1, y, this.config.extent.width-1, y);
         }
     };
