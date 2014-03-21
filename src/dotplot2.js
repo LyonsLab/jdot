@@ -767,23 +767,13 @@ function Plot(element, config) {
         if (!data) return;
 
         var ctx = this.drawable.context,
-            scalar = Math.max(this.drawable.scale.x, this.drawable.scale.y),
-            i,
-            x1,
-            x2,
-            y1,
-            y2;
+            scale = Math.max(this.drawable.scale.x, this.drawable.scale.y);
 
-        for (i = 0; i < data.length; i++) {
-            x1 = data[i].x1;
-            y1 = data[i].y1;
-            x2 = data[i].x2;
-            y2 = data[i].y2;
-
-            ctx.lineWidth = 1 / scalar;
+        for (var i = 0; i < data.length; i++) {
+            ctx.lineWidth = 1 / scale;
             ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+            ctx.moveTo(data[i].x1, data[i].y1);
+            ctx.lineTo(data[i].x2, data[i].y2);
             ctx.stroke();
         }
     };
@@ -793,12 +783,9 @@ function Plot(element, config) {
 
         var ctx = this.drawable.context,
             scalar = Math.max(this.drawable.scale.x, this.drawable.scale.y),
-            x,
-            y,
-            width,
-            height;
+            x, y, width, height;
 
-        for (i = 0; i < data.length; i++) {
+        for (var i = 0; i < data.length; i++) {
             x = data[i][0];
             y = data[i][1];
             width = data[i][2];
@@ -817,7 +804,6 @@ function Plot(element, config) {
     this.render = function() {
     	if (!this.fetch) {
     		console.log('Plot: no fetch handler');
-    		console.log(this);
     		return;
     	}
 
