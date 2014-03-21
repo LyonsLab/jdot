@@ -21,14 +21,10 @@ function MultiDotPlot(id, config) {
 		this.dotplots = [];
 		for (var i = 0; i < numGenomes; i++) {
 			for (var j = 0;  j < numGenomes; j++) {
-				var genome1 = this.config.genomes[i];
-				var genome2 = this.config.genomes[j];
 				var div = createDiv(this.element, this.element.id+'_'+i+'_'+j);
 				var dotplot = new DotPlot(div.id, {
 					size: { width: dpWidth, height: dpHeight },
-					genomes: [ genome1, genome2 ],
-					//extent: { width: genome1.extent, height: genome2.extent },
-					//chromosomes: [ genome1.chromosomes, genome2.chromosomes ],
+					genomes: [ this.config.genomes[i], this.config.genomes[j] ],
 					fetchDataHandler: this.config.fetchDataHandler,
 					controller: this.controller,
 					disableRulers: false,
