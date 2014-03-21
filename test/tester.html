@@ -2,6 +2,7 @@
 <body>
 
 <div>
+    Use the mouse wheel to zoom in/out, left button to pan within plot/axes, and shift+left button to select region in plot/axes.<br>
     Number of points: <input id='num_points' size='15'>
     <button onclick='setPoints();'>Run</button><br>
     <button onclick='resetSize();'>Reset zoom</button><br>
@@ -33,10 +34,10 @@ var dotplot = new DotPlot('dotplot', {
         {   name: 'test2',
             length: gu2,
             chromosomes: [ 
-                { name: 'scaffold1', length: 200000 },
-                { name: 'scaffold2', length: 250000 },
-                { name: 'scaffold3', length: 350000 },
-                { name: 'scaffold4', length: 2200000 }
+                { name: 'a', length: 200000 },
+                { name: 'b', length: 250000 },
+                { name: 'c', length: 350000 },
+                { name: 'd', length: 2200000 }
             ],
         } 
     ],
