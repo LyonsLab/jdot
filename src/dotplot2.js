@@ -767,7 +767,7 @@ function Plot(element, config) {
         }
     };
 
-    this.drawLines = function(data, xscale, yscale) {
+    this.drawLines = function(data) {
         if (!data) return;
 
         var ctx = this.drawable.context,
@@ -792,7 +792,7 @@ function Plot(element, config) {
         }
     };
 
-    this.drawRects = function(data, xscale) {
+    this.drawRects = function(data) {
         if (!data) return;
 
         var ctx = this.drawable.context,
