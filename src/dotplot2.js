@@ -77,7 +77,7 @@ function DotPlot(id, config) {
 		this.controller = this.config.controller || new Controller();
 		
 		// Create Plot
-		var ruleWidth = (config.disableRulers ? 0 : 50);
+		var ruleWidth = (config.disableRulers ? 0 : 100);
 		var plotWidth = config.size.width - ruleWidth;
 		var plotHeight = config.size.height - ruleWidth;
 		var genome1 = config.genomes[0];
@@ -103,7 +103,7 @@ function DotPlot(id, config) {
 			if (!this.config.gridRow || this.config.gridRow == 0) {
 				this.xrule = new Rule(
 					createCanvas(this.element, 'xrule'+generateID()), 
-					{   size: { width: plotWidth, height: 0 }, // 0 height means auto-size 
+					{   size: { width: plotWidth, height: ruleWidth }, //0 }, // zero height means auto-size 
 					    extent: { width: genome1.length, height: genome2.length },
 						orientation: 'horizontal',
 						scaled: false,
@@ -122,7 +122,7 @@ function DotPlot(id, config) {
 			if (!this.config.gridCol || this.config.gridCol == 0) {
 				this.yrule = new Rule(
 					createCanvas(this.element, 'yrule'+generateID()), 
-				    {   size: { width: ruleWidth, height: plotHeight }, 
+				    {   size: { width: ruleWidth /*0*/, height: plotHeight }, // zero width means auto-size 
 				        extent: { width: genome1.length, height: genome2.length },
 				        orientation: 'vertical',
 				        scaled: false,
@@ -617,11 +617,15 @@ function Rule(element, config) {
 
         this.config.orientation = this.config.orientation || 'horizontal';
         
-        this.config.labelFontSize = this.config.labelFontSize || 12;
-        this.config.tickFontSize = this.config.tickFontSize || 6;
+        this.config.titleFontName = this.config.titleFontName || 'Arial';
+        this.config.titleFontSize = this.config.titleFontSize || 12;
+        this.config.labelFontName = this.config.labelFontName || 'Arial';
+        this.config.labelFontSize = this.config.labelFontSize || 10;
+        this.config.tickFontName  = this.config.tickFontName  || 'Arial';
+        this.config.tickFontSize  = this.config.tickFontSize  || 6;
         
         // Calculate label positions
-        var maxLabelWidth, maxLabelHeight;
+        var maxLabelWidth = 0, maxLabelHeight = 0;
         if (this.config.labels) {
         	this.labels = [];
         	for (var i = 0, pos = 0; i < this.config.labels.length; i++) {
@@ -631,16 +635,19 @@ function Rule(element, config) {
         		pos += label.length/2;
         		
         		// Find max label width and height
-        		maxLabelWidth=50;
-        		maxLabelHeight=50;
+//        		var labelWidth = measureText(label.name, '', this.config.labelFontName, this.config.labelFontSize);
+//        		console.log(labelWidth);
+//        		maxLabelWidth  = Math.max( maxLabelWidth, labelWidth[0] );
+//        		maxLabelHeight = this.config.labelFontSize;
         	}
         }
+        //console.log('max ' + maxLabelWidth + ' ' + maxLabelHeight);
 
         // Auto-size if specified
-        if (!this.config.size.width)
-        	this.config.size.width = maxLabelWidth;
-        if (!this.config.size.height)
-        	this.config.size.height = maxLabelHeight;
+//        if (!this.config.size.width)
+//        	this.config.size.width = maxLabelWidth;
+//        if (!this.config.size.height)
+//        	this.config.size.height = maxLabelHeight;
         
         // Apply user-defined styles
         if (this.config.style) {
@@ -677,29 +684,36 @@ function Rule(element, config) {
 	
 	this.redraw = function() {
 		var ctx = this.drawable.context;
-		
         this.drawable.clear();
+        
 		// Draw title
-		var font = this.config.labelFontSize+'pt Arial';
+		var font = this.config.titleFontSize + 'pt ' + this.config.titleFontName;
 		if (this.config.title) {
-			if (this.config.orientation == 'horizontal') {
+			if (this.config.orientation == 'horizontal')
 				drawText(ctx, this.config.title, element.width/2, 14, { align: 'center', font: font});
-			}
-			else {
+			else
 				drawText(ctx, this.config.title, 14, element.height/2, { rotate: 90, font: font});
-			}			
 		}
 		
 		// Draw ruler tick marks/labels
-		font = this.config.tickFontSize+'pt Arial';
+		font = this.config.tickFontSize + 'pt ' + this.config.tickFontName;
 		ctx.lineWidth = .2;
-		var pxLength = (this.config.orientation == 'horizontal' ? this.config.size.width   : this.config.size.height  );
-		var origin   = (this.config.orientation == 'horizontal' ? this.drawable.origin.x   : this.drawable.origin.y   );
-		var view     = (this.config.orientation == 'horizontal' ? this.drawable.view.width : this.drawable.view.height);
-		var scale    = (this.config.orientation == 'horizontal' ? this.drawable.scale.x    : this.drawable.scale.y    );
-		var tick = roundBase10(view/10);
+		var pxLength, origin, view, scale;
+		if (this.config.orientation == 'horizontal') {
+			pxLength = this.config.size.width;
+			origin   = this.drawable.origin.x;
+			view     = this.drawable.view.width;
+			scale    = this.drawable.scale.x;
+		}
+		else { // vertical
+			pxLength = this.config.size.height;
+			origin   = this.drawable.origin.y;
+			view     = this.drawable.view.height;
+			scale    = this.drawable.scale.y;
+		}
+		var tick    = roundBase10(view / 10);
 		var guStart = roundBase10(origin) + tick;
-		var pxStart = scale+int(tick*scale);
+		var pxStart = scale + int(tick * scale);
 		for (var pxPos = pxStart, guPos = guStart; pxPos < pxLength-tick*scale/2; pxPos += tick*scale, guPos += tick) {
 			if (this.config.orientation == 'horizontal') {
 				drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
@@ -711,17 +725,18 @@ function Rule(element, config) {
 			}
 		}
 		
-		// Draw chromosome labels
+		// Draw labels
 		// TODO: keep label centered within chromosome as long as any part of chromosome is visible
+		font = 'bold ' + this.config.labelFontSize + 'pt ' + this.config.labelFontName;
 		if (this.labels) {
 			for (var i = 0; i < this.labels.length; i++) {
 				var label = this.labels[i];
-				var pxPos = int((label.pos-origin) * scale);
+				var pxPos = int((label.pos - origin) * scale);
 				if (pxPos >= 0 && pxPos <= pxLength) {
 					if (this.config.orientation == 'horizontal')
-						drawText(ctx, label.text, pxPos, element.height-1, { align: 'center', rotate: 0, font: 'bold 10pt Arial'});
+						drawText(ctx, label.text, pxPos, element.height-1, { align: 'center', rotate: 0, font: font});
 					else
-						drawText(ctx, label.text, element.width-3, pxPos+3, { align: 'right', rotate: 0, font: 'bold 10pt Arial'});
+						drawText(ctx, label.text, element.width-7, pxPos+3, { align: 'right', rotate: 0, font: font});
 				}
 			}
 		}
