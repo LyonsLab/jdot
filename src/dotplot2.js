@@ -77,7 +77,7 @@ function DotPlot(id, config) {
 		this.controller = this.config.controller || new Controller();
 		
 		// Create Plot
-		var ruleWidth = (config.disableRulers ? 0 : 100);
+		var ruleWidth = (config.disableRulers ? 0 : 75);
 		var plotWidth = config.size.width - ruleWidth;
 		var plotHeight = config.size.height - ruleWidth;
 		var genome1 = config.genomes[0];
@@ -734,7 +734,7 @@ function Rule(element, config) {
 				var pxPos = int((label.pos - origin) * scale);
 				if (pxPos >= 0 && pxPos <= pxLength) {
 					if (this.config.orientation == 'horizontal')
-						drawText(ctx, label.text, pxPos, element.height-1, { align: 'center', rotate: 0, font: font});
+						drawText(ctx, label.text, pxPos, element.height-2, { align: 'center', rotate: 0, font: font});
 					else
 						drawText(ctx, label.text, element.width-7, pxPos+3, { align: 'right', rotate: 0, font: font});
 				}
