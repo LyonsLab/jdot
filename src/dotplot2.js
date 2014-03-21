@@ -12,25 +12,31 @@ function MultiDotPlot(id, config) {
 			console.log('MultiDotPlot: no genomes specified');
 		}
 		
+		this.controller = new Controller();
+		
 		var numGenomes = this.config.genomes.length;
-		var dpPadding = 20;
+		var dpPadding = 15;
 		var dpWidth = config.size.width / numGenomes - dpPadding;
 		var dpHeight = config.size.height / numGenomes - dpPadding;
 		this.dotplots = [];
-		for (var i = 0; i < numGenomes-1; i++) {
-			for (var j = 1;  j < numGenomes; j++) {
+		for (var i = 0; i < numGenomes; i++) {
+			for (var j = 0;  j < numGenomes; j++) {
 				var genome1 = this.config.genomes[i];
 				var genome2 = this.config.genomes[j];
 				var div = createDiv(this.element, this.element.id+'_'+i+'_'+j);
 				var dotplot = new DotPlot(div.id, {
 					size: { width: dpWidth, height: dpHeight },
-					extent: { width: genome1.extent, height: genome2.extent },
-					chromosomes: [ genome1.chromosomes[0], genome2.chromosomes[1] ],
+					genomes: [ genome1, genome2 ],
+					//extent: { width: genome1.extent, height: genome2.extent },
+					//chromosomes: [ genome1.chromosomes, genome2.chromosomes ],
 					fetchDataHandler: genome1.fetchDataHandler,
+					controller: this.controller,
 					disableRulers: false,
+					gridCol: i,
+					gridRow: j,
 				    style: {
 				    	left: (i * dpWidth) + "px",
-				        top:  ((j-1) * dpHeight) + "px",
+				        top:  (j * dpHeight) + "px",
 				        position: "relative"
 				    }
 				});
@@ -72,17 +78,19 @@ function DotPlot(id, config) {
 		this.configure(config);
 		
 		// Setup the UI controller
-		this.controller = new Controller();
+		this.controller = this.config.controller || new Controller();
 		
 		// Create Plot
 		var ruleWidth = (config.disableRulers ? 0 : 50);
 		var plotWidth = config.size.width - ruleWidth;
 		var plotHeight = config.size.height - ruleWidth;
+		var genome1 = config.genomes[0];
+		var genome2 = config.genomes[1];
 		this.plot = new Plot(
-			createCanvas(this.element, 'plot'+generateID()), 
-			config.chromosomes[0], config.chromosomes[1], 
+			createCanvas(this.element, 'plot'+generateID()),
+			genome1.chromosomes, genome2.chromosomes, // FIXME: move into config and make generic
 			{   size: { width: plotWidth, height: plotHeight }, 
-			    extent: config.extent,
+			    extent: { width: genome1.length, height: genome2.length },
 			    scaled: true,
 			    fetchDataHandler: config.fetchDataHandler,
 			    style: {
@@ -96,45 +104,51 @@ function DotPlot(id, config) {
 	
 		// Create X and Y rulers
 		if (!config.disableRulers) {
-			this.xrule = new Rule(
-				createCanvas(this.element, 'xrule'+generateID()), 
-				{   size: { width: plotWidth, height: ruleWidth }, 
-				    extent: config.extent,
-					orientation: 'horizontal',
-					scaled: false,
-					labels: config.chromosomes[0],
-					style: {
-						left: ruleWidth+"px",
-						top:  "0px",
-						position: "absolute"
-					}
-			    }
-			);
-			this.controller.addListener(this.xrule.drawable);
+			if (!this.config.gridRow || this.config.gridRow == 0) {
+				this.xrule = new Rule(
+					createCanvas(this.element, 'xrule'+generateID()), 
+					{   size: { width: plotWidth, height: ruleWidth }, 
+					    extent: { width: genome1.length, height: genome2.length },
+						orientation: 'horizontal',
+						scaled: false,
+						title: ((!this.config.gridRow || this.config.gridRow == 0) ? genome1.name : ''),
+						labels: genome1.chromosomes,
+						style: {
+							left: ruleWidth+"px",
+							top:  "0px",
+							position: "absolute"
+						}
+				    }
+				);
+				this.controller.addListener(this.xrule.drawable);
+			}
 			
-			this.yrule = new Rule(
-				createCanvas(this.element, 'yrule'+generateID()), 
-			    {   size: { width: ruleWidth, height: plotHeight }, 
-			        extent: config.extent, 
-			        orientation: 'vertical',
-			        scaled: false,
-			        labels: config.chromosomes[1],
-			        style: {
-			        	left: "0px",
-			        	top:  ruleWidth+"px",
-			        	position: "absolute"
-			        }
-			    }
-			);
-			this.controller.addListener(this.yrule.drawable);
+			if (!this.config.gridCol || this.config.gridCol == 0) {
+				this.yrule = new Rule(
+					createCanvas(this.element, 'yrule'+generateID()), 
+				    {   size: { width: ruleWidth, height: plotHeight }, 
+				        extent: { width: genome1.length, height: genome2.length },
+				        orientation: 'vertical',
+				        scaled: false,
+				        title: ((!this.config.gridCol || this.config.gridCol == 0) ? genome2.name : ''),
+				        labels: genome2.chromosomes,
+				        style: {
+				        	left: "0px",
+				        	top:  ruleWidth+"px",
+				        	position: "absolute"
+				        }
+				    }
+				);
+				this.controller.addListener(this.yrule.drawable);
+			}
 		}
 	};
 	
 	this.configure = function(config) {
 		this.config = config || {};
 	
-		if (!this.config.extent) {
-			console.log("Error: please specify an extent");
+		if (!this.config.genomes) {
+			console.log("Error: no genomes");
 			return;
 		}
 		
@@ -207,7 +221,7 @@ function Controller(drawables, config) {
     };
 	
 	this.onkeydown = function(e) {
-		console.log('keydown');
+		//console.log('keydown');
 		var tx = 0, ty = 0;
 	    switch(e.keyCode) {
 	        case 37: tx = 5;  ty = 0;  break; // left
@@ -240,7 +254,7 @@ function Controller(drawables, config) {
     };
 
     this.onmousewheel = function(e) {
-    	console.log('mousewheel');
+    	//console.log('mousewheel');
     	var loc = e.target.getBoundingClientRect();
     	var mousex = e.x - loc.left;
         var mousey = e.y - loc.top;
@@ -279,7 +293,7 @@ function Controller(drawables, config) {
             var y1 = e.y - loc.top;
             var x2 = this.mouse.drag.x;
             var y2 = this.mouse.drag.y;
-            console.log('mousemove '+x1+' '+y1+' '+x2+' '+y2);
+            //console.log('mousemove '+x1+' '+y1+' '+x2+' '+y2);
     	    
             selected.highlight(x1, y1, x2, y2);
     	}
@@ -471,7 +485,7 @@ function Drawable(element, config) {
     };
     
     this.zoom = function(x, y, zoom, axis) {
-    	console.log('zoom: '+x+' '+y+' '+zoom);
+    	//console.log('zoom: '+x+' '+y+' '+zoom);
         var xzoom, yzoom;
         xzoom = yzoom = zoom;
 
@@ -551,7 +565,7 @@ function Drawable(element, config) {
     
     this.move = function(tx, ty) {
     	if (this.isMinScale()) return; // can't move, zoomed-out all the way
-    	console.log("move: " + tx + " " + ty);
+    	//console.log("move: " + tx + " " + ty);
     	
         tx = tx / this.scale.x;
         ty = ty / this.scale.y;
@@ -644,8 +658,19 @@ function Rule(element, config) {
 	}
 	
 	this.redraw = function() {
-		// Draw ruler tick marks/labels
 		var ctx = this.drawable.context;
+		
+		// Draw title
+		if (this.config.title) {
+			if (this.config.orientation == 'horizontal') {
+				drawText(ctx, this.config.title, element.width/2, 14, { align: 'center', font: '12pt Arial'});
+			}
+			else {
+				drawText(ctx, this.config.title, 14, element.height/2, { rotate: 90, font: '12pt Arial'});
+			}			
+		}
+		
+		// Draw ruler tick marks/labels
 		ctx.lineWidth = .2;
 		var pxLength = (this.config.orientation == 'horizontal' ? this.config.size.width   : this.config.size.height  );
 		var origin   = (this.config.orientation == 'horizontal' ? this.drawable.origin.x   : this.drawable.origin.y   );
@@ -680,9 +705,9 @@ function Rule(element, config) {
 				var pxPos = int((label.pos-origin) * scale);
 				if (pxPos >= 0 && pxPos <= pxLength) {
 					if (this.config.orientation == 'horizontal')
-						drawText(ctx, label.text, pxPos, element.height-1, { align: 'center', rotate: 0, font: 'bold 12pt Arial'});
+						drawText(ctx, label.text, pxPos, element.height-1, { align: 'center', rotate: 0, font: 'bold 10pt Arial'});
 					else
-						drawText(ctx, label.text, element.width-3, pxPos+3, { align: 'right', rotate: 0, font: 'bold 12pt Arial'});
+						drawText(ctx, label.text, element.width-3, pxPos+3, { align: 'right', rotate: 0, font: 'bold 10pt Arial'});
 				}
 			}
 		}
@@ -896,7 +921,6 @@ function restoreSelection(context) {
 }
 
 function saveSelection(context, x, y , width, height) {
-	console.log('saveSelection '+x+' '+y+' '+width+' '+height);
     this.selectionBuffer = [x, y, context.getImageData(x, y, width, height)];
 }
 

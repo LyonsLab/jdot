@@ -6,7 +6,7 @@
     <button onclick='setPoints();'>Run</button><br>
     <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
 </div>
-
+<br>
 <div id='mtulidotplot'></div>
 <div id='dotplot'></div>
 
@@ -17,6 +17,8 @@ var fetchData = fetch_array;
 
 var gu1 = 2*1000*1000;
 var gu2 = 3*1000*1000;
+var gu3 = 2*1000*1000;
+var gu4 = 3*1000*1000;
 var chromosomes1 = [ 
     { name: '1', length: 100000 },
     { name: '2', length: 200000 },
@@ -29,36 +31,44 @@ var chromosomes2 = [
     { name: 'c', length: 350000 },
     { name: 'd', length: 2200000 }
 ];
-
-var maxTiles = 100;
-var tileColSize = Math.floor(gu1/maxTiles);
-var tileRowSize = Math.floor(gu2/maxTiles);
+var chromosomes3 = [ 
+    { name: 'e', length: 1000000 },
+    { name: 'f', length: 200000 },
+    { name: 'g', length: 200000 },
+    { name: 'h', length: 600000 }
+];
+var chromosomes4 = [ 
+    { name: 'w', length: 700000 },
+    { name: 'x', length: 70000 },
+    { name: 'y', length: 50000 },
+    { name: 'z', length: 2180000 }
+];
 
 var multidotplot = new MultiDotPlot('mtulidotplot', {
     size: { width: 1000, height: 800 },
     genomes: [
         {
         	name: 'test1',
-            extent: gu1,
-            chromosomes: [ chromosomes1, chromosomes2 ],
+            length: gu1,
+            chromosomes: chromosomes1,
             fetchDataHandler: fetchData,
         },
         {
         	name: 'test2',
-            extent: gu2,
-            chromosomes: [ chromosomes1, chromosomes2 ],
+        	length: gu2,
+            chromosomes: chromosomes2,
             fetchDataHandler: fetchData,
         },
         {
-        	name: 'test1',
-            extent: gu1,
-            chromosomes: [ chromosomes1, chromosomes2 ],
+        	name: 'test3',
+        	length: gu3,
+            chromosomes: chromosomes3,
             fetchDataHandler: fetchData,
         },
         {
-        	name: 'test2',
-            extent: gu2,
-            chromosomes: [ chromosomes1, chromosomes2 ],
+        	name: 'test4',
+        	length: gu4,
+            chromosomes: chromosomes4,
             fetchDataHandler: fetchData,
         }
     ],
@@ -69,7 +79,7 @@ var multidotplot = new MultiDotPlot('mtulidotplot', {
 
 var data;
 var tiles;
-setPoints(10*1000);
+setPoints(1*5000);
 	
 //------------------------------------------------------------------------------
 
@@ -77,8 +87,8 @@ function init_array(n) {
     // Generate some random data points
     data = [];
     for (var i=0; i < n; i++) {
-        var x1 = Math.floor( Math.random() * gu1 );
-        var y1 = Math.floor( Math.random() * gu2 );
+        var x1 = Math.floor( Math.random() * Math.max(gu1, gu2, gu3, gu4) );
+        var y1 = Math.floor( Math.random() * Math.max(gu1, gu2, gu3, gu4) );
         var x2 = x1 + Math.floor( Math.random() * 1000 );
         var y2 = y1 + Math.floor( Math.random() * 1000 );
         data.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
