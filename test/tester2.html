@@ -15,8 +15,7 @@ var initData = init_array;
 var fetchData = fetch_array;
 
 var genomes = [
-    {
-        name: 'test1',
+    {   name: 'test1',
         length: 2*1000*1000,
         chromosomes: [
             { name: '1', length: 100000 },
@@ -24,10 +23,8 @@ var genomes = [
             { name: '3', length: 300000 },
             { name: '4', length: 1100000 }
         ],
-        fetchDataHandler: fetchData,
     },
-    {
-        name: 'test2',
+    {   name: 'test2',
         length: 3*1000*1000,
         chromosomes: [ 
             { name: 'a', length: 200000 },
@@ -35,10 +32,8 @@ var genomes = [
             { name: 'c', length: 350000 },
             { name: 'd', length: 2200000 }
         ],
-        fetchDataHandler: fetchData,
     },
-    {
-        name: 'test3',
+    {   name: 'test3',
         length: 2*1000*1000,
         chromosomes: [ 
             { name: 'e', length: 1000000 },
@@ -46,10 +41,8 @@ var genomes = [
             { name: 'g', length: 200000 },
             { name: 'h', length: 600000 }
         ],
-        fetchDataHandler: fetchData,
     },
-    {
-        name: 'test4',
+    {   name: 'test4',
         length: 3*1000*1000,
         chromosomes: [ 
             { name: 'w', length: 700000 },
@@ -57,13 +50,13 @@ var genomes = [
             { name: 'y', length: 50000 },
             { name: 'z', length: 2180000 }
         ],
-        fetchDataHandler: fetchData,
     }
 ];
 
 var multidotplot = new MultiDotPlot('multidotplot', {
     size: { width: 1000, height: 800 },
     genomes: genomes,
+    fetchDataHandler: fetchData,
     style: {
         position: "relative"
     }

@@ -16,33 +16,27 @@ var fetchData = fetch_array;
 
 var gu1 = 2*1000*1000;
 var gu2 = 3*1000*1000;
-var chromosomes1 = [ 
-    { name: '1', length: 100000 },
-    { name: '2', length: 200000 },
-    { name: '3', length: 300000 },
-    { name: '4', length: 1400000 }
-];
-var chromosomes2 = [ 
-    { name: 'a', length: 200000 },
-    { name: 'b', length: 250000 },
-    { name: 'c', length: 350000 },
-    { name: 'd', length: 2200000 }
-];
 
 var dotplot = new DotPlot('dotplot', {
     size: { width: 1000, height: 800 },
     genomes: [
-        {
-            name: 'test1',
+        {   name: 'test1',
             length: gu1,
-            chromosomes: chromosomes1,
-            fetchDataHandler: fetchData,
+            chromosomes: [ 
+                { name: '1', length: 100000 },
+                { name: '2', length: 200000 },
+                { name: '3', length: 300000 },
+                { name: '4', length: 1400000 }
+            ],
         },
-        {
-            name: 'test2',
+        {   name: 'test2',
             length: gu2,
-            chromosomes: chromosomes2,
-            fetchDataHandler: fetchData,
+            chromosomes: [ 
+                { name: 'scaffold1', length: 200000 },
+                { name: 'scaffold2', length: 250000 },
+                { name: 'scaffold3', length: 350000 },
+                { name: 'scaffold4', length: 2200000 }
+            ],
         } 
     ],
     fetchDataHandler: fetchData,

@@ -29,7 +29,7 @@ function MultiDotPlot(id, config) {
 					genomes: [ genome1, genome2 ],
 					//extent: { width: genome1.extent, height: genome2.extent },
 					//chromosomes: [ genome1.chromosomes, genome2.chromosomes ],
-					fetchDataHandler: genome1.fetchDataHandler,
+					fetchDataHandler: this.config.fetchDataHandler,
 					controller: this.controller,
 					disableRulers: false,
 					gridCol: i,
@@ -411,7 +411,7 @@ function Drawable(element, config) {
         this.renderer.call(this.scope);
     };
     
-    this.highlight = function(x1, y1, x2, y2) { // FIXME: same as Dotplot
+    this.highlight = function(x1, y1, x2, y2) {
     	x1 = constrainTo(x1, 0, this.config.size.width-1);
     	y1 = constrainTo(y1, 0, this.config.size.height-1);
     	x2 = constrainTo(x2, 0, this.config.size.width-1);
