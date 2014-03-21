@@ -284,7 +284,7 @@ function Controller(drawables, config) {
         	return;
         var loc = this.mouse.target.getBoundingClientRect();
         
-        var selected = this._getDrawableById(e.target.id);
+        var selected = this._getDrawableById(this.mouse.target.id);
         if (!selected)
         	return;
         
@@ -298,9 +298,9 @@ function Controller(drawables, config) {
             selected.highlight(x1, y1, x2, y2);
     	}
     	else {
-    		//console.log('mousemove');
     		var tx = (e.x - loc.left - this.mouse.drag.x) / this.config.dragSpeed;
     		var ty = (e.y - loc.top - this.mouse.drag.y) / this.config.dragSpeed;
+    		//console.log('mousemove '+tx+' '+ty);
     		
             if (selected.config.orientation == 'horizontal')
             	ty = 0;
@@ -326,7 +326,7 @@ function Controller(drawables, config) {
         	return;
         var loc = this.mouse.target.getBoundingClientRect();
         
-        var selected = this._getDrawableById(e.target.id);
+        var selected = this._getDrawableById(this.mouse.target.id);
         if (!selected)
         	return;
         
@@ -438,7 +438,7 @@ function Drawable(element, config) {
         } 
         else if (this.config.orientation == 'vertical') {
             restoreSelection(this.context, 0, y);
-            saveSelection(this.context, x, 0, width, this.config.size.height-1, 0.1);
+            saveSelection(this.context, 0, y, this.config.size.width-1, height, 0.1);
             drawRect(this.context, 0, y, this.config.size.width-1, height, 0.1);
         }
     }
@@ -919,7 +919,7 @@ function restoreSelection(context) {
     }
 }
 
-function saveSelection(context, x, y , width, height) {
+function saveSelection(context, x, y, width, height) {
     this.selectionBuffer = [x, y, context.getImageData(x, y, width, height)];
 }
 
