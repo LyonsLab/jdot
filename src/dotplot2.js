@@ -818,12 +818,12 @@ function Plot(element, config) {
         this.drawChromosomes();
 
         // Draw all layers returned from the fetch
-        for(index = 0; index < layers.length; index++) {
+        for(var i = 0; i < layers.length; i++) {
             this.drawable.context.save();
-            applyProperties(this.drawable.context, layers[index].style);
-            this.drawDots(layers[index].points);
-            this.drawLines(layers[index].lines, this.xscale, this.yscale);
-            this.drawRects(layers[index].rects, this.xscale);
+            applyProperties(this.drawable.context, layers[i].style);
+            this.drawDots(layers[i].points);
+            this.drawLines(layers[i].lines, this.xscale, this.yscale);
+            this.drawRects(layers[i].rects, this.xscale);
             this.drawable.context.restore();
         }
 
