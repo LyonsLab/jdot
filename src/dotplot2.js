@@ -103,7 +103,7 @@ function DotPlot(id, config) {
 			if (!this.config.gridRow || this.config.gridRow == 0) {
 				this.xrule = new Rule(
 					createCanvas(this.element, 'xrule'+generateID()), 
-					{   size: { width: plotWidth, height: ruleWidth }, 
+					{   size: { width: plotWidth, height: 0 }, // 0 height means auto-size 
 					    extent: { width: genome1.length, height: genome2.length },
 						orientation: 'horizontal',
 						scaled: false,
@@ -611,6 +611,11 @@ function Rule(element, config) {
 
         this.config.orientation = this.config.orientation || 'horizontal';
         
+        this.config.labelFontSize = this.config.labelFontSize || 12;
+        this.config.tickFontSize = this.config.tickFontSize || 6;
+        
+        // Calculate label positions
+        var maxLabelWidth, maxLabelHeight;
         if (this.config.labels) {
         	this.labels = [];
         	for (var i = 0, pos = 0; i < this.config.labels.length; i++) {
@@ -618,9 +623,20 @@ function Rule(element, config) {
         		pos += label.length/2;
         		this.labels.push({ pos: pos, text: label.name });
         		pos += label.length/2;
+        		
+        		// Find max label width and height
+        		maxLabelWidth=50;
+        		maxLabelHeight=50;
         	}
         }
+
+        // Auto-size if specified
+        if (!this.config.size.width)
+        	this.config.size.width = maxLabelWidth;
+        if (!this.config.size.height)
+        	this.config.size.height = maxLabelHeight;
         
+        // Apply user-defined styles
         if (this.config.style) {
         	applyStyles(this.element, this.config.style);
         }
@@ -657,16 +673,18 @@ function Rule(element, config) {
 		var ctx = this.drawable.context;
 		
 		// Draw title
+		var font = this.config.labelFontSize+'pt Arial';
 		if (this.config.title) {
 			if (this.config.orientation == 'horizontal') {
-				drawText(ctx, this.config.title, element.width/2, 14, { align: 'center', font: '12pt Arial'});
+				drawText(ctx, this.config.title, element.width/2, 14, { align: 'center', font: font});
 			}
 			else {
-				drawText(ctx, this.config.title, 14, element.height/2, { rotate: 90, font: '12pt Arial'});
+				drawText(ctx, this.config.title, 14, element.height/2, { rotate: 90, font: font});
 			}			
 		}
 		
 		// Draw ruler tick marks/labels
+		font = this.config.tickFontSize+'pt Arial';
 		ctx.lineWidth = .2;
 		var pxLength = (this.config.orientation == 'horizontal' ? this.config.size.width   : this.config.size.height  );
 		var origin   = (this.config.orientation == 'horizontal' ? this.drawable.origin.x   : this.drawable.origin.y   );
@@ -676,20 +694,13 @@ function Rule(element, config) {
 		var guStart = roundBase10(origin) + tick;
 		var pxStart = scale+int(tick*scale);
 		for (var pxPos = pxStart, guPos = guStart; pxPos < pxLength-tick*scale/2; pxPos += tick*scale, guPos += tick) {
-			// TODO optimize this code
 			if (this.config.orientation == 'horizontal') {
-				ctx.beginPath();
-				ctx.moveTo(pxPos, element.height-11);
-				ctx.lineTo(pxPos, element.height);
-				ctx.stroke();
-				drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: '6pt Arial'});
+				drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
+				drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
 			}
-			else {
-				ctx.beginPath();
-				ctx.moveTo(element.width-11, pxPos);
-				ctx.lineTo(element.width, pxPos);
-				ctx.stroke();
-				drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: '6pt Arial'});
+			else { // vertical
+				drawLine(ctx, element.width-11, pxPos, element.width, pxPos);
+				drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: font});
 			}
 		}
 		
@@ -735,15 +746,19 @@ function Plot(element, config) {
         }
     };
 
-    this.drawChromosomes = function() {
+    this.drawLabels = function() {
     	var ctx = this.drawable.context;
         //ctx.imageSmoothingEnabled = false;
+    	
+    	// X-axis
         ctx.lineWidth = 1 / this.drawable.scale.x / 2; // same size regardless of zoom
         var labels = this.config.labels.x;
         for (var i = 0, x = 0; i < labels.length-1; i++) {
         	x += labels[i].length;
         	drawLine(ctx, x, 1, x, this.config.extent.height-1);
         }
+        
+        // Y-axis
         labels = this.config.labels.y;
         ctx.lineWidth = 1 / this.drawable.scale.y / 2; // same size regardless of zoom
         for (var i = 0, y = 0; i < labels.length-1; i++) {
@@ -757,9 +772,7 @@ function Plot(element, config) {
     	
     	var ctx = this.drawable.context;
         for (var i = 0; i < data.length; i++) {
-            var x = data[i].x;
-            var y = data[i].y;
-            ctx.fillRect( x, y, 1000, 1000 );
+            ctx.fillRect( data[i].x, data[i].y, 1000, 1000 );
         }
     };
 
@@ -810,7 +823,7 @@ function Plot(element, config) {
     	//var startTime = Date.now();
         var layers = this.fetch(this.drawable.origin.x, this.drawable.origin.y,
                                 this.drawable.view.width, this.drawable.view.height );
-        this.drawChromosomes();
+        this.drawLabels();
 
         // Draw all layers returned from the fetch
         for(var i = 0; i < layers.length; i++) {
@@ -978,10 +991,10 @@ function drawText(context, text, x, y, options) {
 }
 
 /**
-* Source: http://www.rgraph.net/blog/2013/january/measuring-text-height-with-html5-canvas.html
 * Measures text by creating a DIV in the document and adding the relevant text to it.
 * Then checking the .offsetWidth and .offsetHeight. Because adding elements to the DOM is not particularly
 * efficient in animations (particularly) it caches the measured text width/height.
+* Source: http://www.rgraph.net/blog/2013/january/measuring-text-height-with-html5-canvas.html
 * 
 * @param  string text   The text to measure
 * @param  bool   bold   Whether the text is bold or not
@@ -989,8 +1002,7 @@ function drawText(context, text, x, y, options) {
 * @param  size   number The size of the text (in pts)
 * @return array         A two element array of the width and height of the text
 */
-function measureText(text, bold, font, size)
-{
+function measureText(text, bold, font, size) {
     // This global variable is used to cache repeated calls with the same arguments
     var str = text + ':' + bold + ':' + font + ':' + size;
     if (typeof(__measuretext_cache__) == 'object' && __measuretext_cache__[str]) {
