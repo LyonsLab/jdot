@@ -4,6 +4,8 @@
 <div>
     Number of points: <input id='num_points' size='15'>
     <button onclick='setPoints();'>Run</button><br>
+    <label>Reset the zoom level:</label>
+    <button onclick='resetSize();'>Reset</button><br>
     <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
 </div>
 
@@ -77,6 +79,12 @@ function setPoints(n) {
 	
 	initData(n);
 	dotplot.redraw();
+}
+
+function resetSize() {
+    if (dotplot) {
+        dotplot.reset();
+    }
 }
 </script>
 

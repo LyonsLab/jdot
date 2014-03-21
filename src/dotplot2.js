@@ -165,7 +165,13 @@ function DotPlot(id, config) {
 		if (this.yrule)
 			this.yrule.redraw();
 	};
-	
+
+    this.reset = function() {
+        this.plot.zoom(0, 0, 0);
+        this.xrule.zoom(0, 0, 0);
+        this.yrule.zoom(0, 0, 0);
+    }
+
 	this.constructor();
 }
 
