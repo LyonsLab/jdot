@@ -274,6 +274,7 @@ function Controller(drawables, config) {
         this.mouse.drag.x = e.x - loc.left;
         this.mouse.drag.y = e.y - loc.top;
         this.mouse.isDown = true;
+        this.mouse.shiftKey = e.shiftKey;
     };
 
     this.onmousemove = function(e) {
@@ -286,7 +287,7 @@ function Controller(drawables, config) {
         
         var loc = this.mouse.target.getBoundingClientRect();
         
-    	if (e.shiftKey) {
+    	if (this.mouse.shiftKey) {
         	var x1 = e.x - loc.left;
             var y1 = e.y - loc.top;
             var x2 = this.mouse.drag.x;
@@ -334,7 +335,7 @@ function Controller(drawables, config) {
         
         var loc = target.getBoundingClientRect();
         
-    	if (e.shiftKey) {
+    	if (this.mouse.shiftKey) {
     		if (isDown) {
     			var x1 = e.x - loc.left;
                 var y1 = e.y - loc.top;
