@@ -656,6 +656,7 @@ function Rule(element, config) {
 	this.redraw = function() {
 		var ctx = this.drawable.context;
 		
+        this.drawable.clear();
 		// Draw title
 		if (this.config.title) {
 			if (this.config.orientation == 'horizontal') {
