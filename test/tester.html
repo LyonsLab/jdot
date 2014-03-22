@@ -24,7 +24,7 @@ var dotplot = new DotPlot('dotplot', {
     genomes: [
         {   name: 'test1',
             length: gu1,
-            chromosomes: [ 
+            chromosomes: [
                 { name: '1', length: 100000 },
                 { name: '2', length: 200000 },
                 { name: '3', length: 300000 },
@@ -33,13 +33,13 @@ var dotplot = new DotPlot('dotplot', {
         },
         {   name: 'test2',
             length: gu2,
-            chromosomes: [ 
+            chromosomes: [
                 { name: 'a', length: 200000 },
                 { name: 'b', length: 250000 },
                 { name: 'c', length: 350000 },
                 { name: 'd', length: 2200000 }
             ],
-        } 
+        }
     ],
     fetchDataHandler: fetchData,
     style: {
@@ -72,13 +72,13 @@ function fetch_array(x, y, width, height) {
 }
 
 function setPoints(n) {
-	if (n) 
-		document.getElementById('num_points').value = n;
-	else
-		n = document.getElementById('num_points').value;
-	
-	initData(n);
-	dotplot.redraw();
+    if (n)
+        document.getElementById('num_points').value = n;
+    else
+        n = document.getElementById('num_points').value;
+
+    initData(n);
+    dotplot.redraw();
 }
 
 function resetSize() {

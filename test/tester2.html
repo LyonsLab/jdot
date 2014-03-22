@@ -26,7 +26,7 @@ var genomes = [
     },
     {   name: 'test2',
         length: 3*1000*1000,
-        chromosomes: [ 
+        chromosomes: [
             { name: 'a', length: 200000 },
             { name: 'b', length: 250000 },
             { name: 'c', length: 350000 },
@@ -35,7 +35,7 @@ var genomes = [
     },
     {   name: 'test3',
         length: 2*1000*1000,
-        chromosomes: [ 
+        chromosomes: [
             { name: 'e', length: 1000000 },
             { name: 'f', length: 200000 },
             { name: 'g', length: 200000 },
@@ -44,7 +44,7 @@ var genomes = [
     },
     {   name: 'test4',
         length: 3*1000*1000,
-        chromosomes: [ 
+        chromosomes: [
             { name: 'w', length: 700000 },
             { name: 'x', length: 70000 },
             { name: 'y', length: 50000 },
@@ -64,7 +64,7 @@ var multidotplot = new MultiDotPlot('multidotplot', {
 
 var data;
 setPoints(1*5000);
-	
+
 //------------------------------------------------------------------------------
 
 function init_array(n) {
@@ -86,13 +86,13 @@ function fetch_array(x, y, width, height) {
 }
 
 function setPoints(n) {
-	if (n) 
-		document.getElementById('num_points').value = n;
-	else
-		n = document.getElementById('num_points').value;
-	
-	initData(n);
-	multidotplot.redraw();
+    if (n)
+        document.getElementById('num_points').value = n;
+    else
+        n = document.getElementById('num_points').value;
+
+    initData(n);
+    multidotplot.redraw();
 }
 </script>
 
