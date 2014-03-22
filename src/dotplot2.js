@@ -100,14 +100,14 @@ function DotPlot(id, config) {
 	
 		// Create X and Y rulers
 		if (!config.disableRulers) {
-			if (!this.config.gridRow || this.config.gridRow == 0) {
+			if (!this.config.gridRow || this.config.gridRow === 0) {
 				this.xrule = new Rule(
 					createCanvas(this.element, 'xrule'+generateID()), 
 					{   size: { width: plotWidth, height: ruleWidth }, //0 }, // zero height means auto-size 
 					    extent: { width: genome1.length, height: genome2.length },
 						orientation: 'horizontal',
 						scaled: false,
-						title: ((!this.config.gridRow || this.config.gridRow == 0) ? genome1.name : ''),
+						title: ((!this.config.gridRow || this.config.gridRow === 0) ? genome1.name : ''),
 						labels: genome1.chromosomes,
 						style: {
 							left: ruleWidth+"px",
@@ -119,14 +119,14 @@ function DotPlot(id, config) {
 				this.controller.addListener(this.xrule.drawable);
 			}
 			
-			if (!this.config.gridCol || this.config.gridCol == 0) {
+			if (!this.config.gridCol || this.config.gridCol === 0) {
 				this.yrule = new Rule(
 					createCanvas(this.element, 'yrule'+generateID()), 
 				    {   size: { width: ruleWidth /*0*/, height: plotHeight }, // zero width means auto-size 
 				        extent: { width: genome1.length, height: genome2.length },
 				        orientation: 'vertical',
 				        scaled: false,
-				        title: ((!this.config.gridCol || this.config.gridCol == 0) ? genome2.name : ''),
+				        title: ((!this.config.gridCol || this.config.gridCol === 0) ? genome2.name : ''),
 				        labels: genome2.chromosomes,
 				        style: {
 				        	left: "0px",
@@ -214,7 +214,7 @@ function Controller(drawables, config) {
     this._getDrawableById = function(id) {
         var found;
         this.drawables.some(function(d) {
-        	if (d.element.id == id) {
+        	if (d.element.id === id) {
         		found = d;
         		return true;
         	}
@@ -233,7 +233,7 @@ function Controller(drawables, config) {
 	    }
 		
         this.drawables.forEach(function(d) {
-        	if (d.config.orientation == 'both')
+        	if (d.config.orientation === 'both')
         		d.move(tx, ty);
         });
         
@@ -253,9 +253,9 @@ function Controller(drawables, config) {
         	return;
         
         this.drawables.forEach(function(d) {
-        	if (d.config.orientation == selected.config.orientation 
-        			|| d.config.orientation == 'both' 
-        			|| selected.config.orientation == 'both') 
+        	if (d.config.orientation === selected.config.orientation 
+        			|| d.config.orientation === 'both' 
+        			|| selected.config.orientation === 'both') 
         	{
         		d.zoom(mousex, mousey, zoom, selected.config.orientation);
         	}
@@ -266,7 +266,7 @@ function Controller(drawables, config) {
     
     this.onmousedown = function(e) {
     	//console.log('mousedown');
-    	if (this.mouse.target && e.target != this.mouse.target)
+    	if (this.mouse.target && e.target !== this.mouse.target)
     		return;
     	
     	this.mouse.target = e.target;
@@ -301,15 +301,15 @@ function Controller(drawables, config) {
     		var ty = (e.y - loc.top - this.mouse.drag.y) / this.config.dragSpeed;
     		//console.log('mousemove '+tx+' '+ty);
     		
-            if (selected.config.orientation == 'horizontal')
+            if (selected.config.orientation === 'horizontal')
             	ty = 0;
-            else if (selected.config.orientation == 'vertical')
+            else if (selected.config.orientation === 'vertical')
             	tx = 0;
             
             this.drawables.forEach(function(d) {
-            	if (d.config.orientation == selected.config.orientation 
-            			|| d.config.orientation == 'both' 
-            			|| selected.config.orientation == 'both') 
+            	if (d.config.orientation === selected.config.orientation 
+            			|| d.config.orientation === 'both' 
+            			|| selected.config.orientation === 'both') 
             	{
             		d.move(tx, ty);
             	}
@@ -342,19 +342,19 @@ function Controller(drawables, config) {
                 var x2 = this.mouse.drag.x;
                 var y2 = this.mouse.drag.y;
                 
-                if (selected.config.orientation == 'horizontal') {
+                if (selected.config.orientation === 'horizontal') {
                 	y1 = 0;
                 	y2 = Number.MAX_VALUE;
                 }
-                else if (selected.config.orientation == 'vertical') {
+                else if (selected.config.orientation === 'vertical') {
                 	x1 = 0;
                 	x2 = Number.MAX_VALUE;
                 }
                 
                 this.drawables.forEach(function(d) {
-                	if (d.config.orientation == selected.config.orientation 
-                			|| d.config.orientation == 'both' 
-                			|| selected.config.orientation == 'both') 
+                	if (d.config.orientation === selected.config.orientation 
+                			|| d.config.orientation === 'both' 
+                			|| selected.config.orientation === 'both') 
                 	{
                 		d.select(x1, y1, x2, y2);
                 	}
@@ -428,17 +428,17 @@ function Drawable(element, config) {
         // Check for zero size
         if (width === 0 || height === 0) return;
 
-        if (!this.config.orientation || this.config.orientation == 'both') {
+        if (!this.config.orientation || this.config.orientation === 'both') {
         	restoreSelection(this.context);
             saveSelection(this.context, x, y, width, height);
             drawRect(this.context, x, y, width, height, 0.1);
         }
-        else if (this.config.orientation == 'horizontal') {
+        else if (this.config.orientation === 'horizontal') {
             restoreSelection(this.context, x, 0);
             saveSelection(this.context, x, 0, width, this.config.size.height-1, 0.1);
             drawRect(this.context, x, 0, width, this.config.size.height-1, 0.1);
         } 
-        else if (this.config.orientation == 'vertical') {
+        else if (this.config.orientation === 'vertical') {
             restoreSelection(this.context, 0, y);
             saveSelection(this.context, 0, y, this.config.size.width-1, height, 0.1);
             drawRect(this.context, 0, y, this.config.size.width-1, height, 0.1);
@@ -505,11 +505,11 @@ function Drawable(element, config) {
             yzoom = newYScale / this.scale.y;
         }
 
-        if (axis == 'horizontal') {
+        if (axis === 'horizontal') {
         	yzoom = 1;
         	newYScale = this.scale.y;
         }
-        else if (axis == 'vertical') {
+        else if (axis === 'vertical') {
         	xzoom = 1;
         	newXScale = this.scale.x;
         }
@@ -598,7 +598,7 @@ function Drawable(element, config) {
     this.isMinScale = function() {
         var minXScale = this.config.size.width / this.config.extent.width;
         var minYScale = this.config.size.height / this.config.extent.height;
-        return (this.scale.x == minXScale && this.scale.y == minYScale);
+        return (this.scale.x === minXScale && this.scale.y === minYScale);
     }
     
     this.constructor();
@@ -673,7 +673,7 @@ function Rule(element, config) {
 	
 	this.drawTick = function(pos) {
 		var ctx = this.drawable.context;
-		var scale = (this.config.orientation == 'horizontal' ? this.scale.x : this.scale.y);
+		var scale = (this.config.orientation === 'horizontal' ? this.scale.x : this.scale.y);
 		var x = this.scale * pos;
 		ctx.beginPath();
 		ctx.moveTo(x, element.height-11);
@@ -689,7 +689,7 @@ function Rule(element, config) {
 		// Draw title
 		var font = this.config.titleFontSize + 'pt ' + this.config.titleFontName;
 		if (this.config.title) {
-			if (this.config.orientation == 'horizontal')
+			if (this.config.orientation === 'horizontal')
 				drawText(ctx, this.config.title, element.width/2, 14, { align: 'center', font: font});
 			else
 				drawText(ctx, this.config.title, 14, element.height/2, { rotate: 90, font: font});
@@ -699,7 +699,7 @@ function Rule(element, config) {
 		font = this.config.tickFontSize + 'pt ' + this.config.tickFontName;
 		ctx.lineWidth = .2;
 		var pxLength, origin, view, scale;
-		if (this.config.orientation == 'horizontal') {
+		if (this.config.orientation === 'horizontal') {
 			pxLength = this.config.size.width;
 			origin   = this.drawable.origin.x;
 			view     = this.drawable.view.width;
@@ -715,7 +715,7 @@ function Rule(element, config) {
 		var guStart = roundBase10(origin) + tick;
 		var pxStart = scale + int(tick * scale);
 		for (var pxPos = pxStart, guPos = guStart; pxPos < pxLength-tick*scale/2; pxPos += tick*scale, guPos += tick) {
-			if (this.config.orientation == 'horizontal') {
+			if (this.config.orientation === 'horizontal') {
 				drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
 				drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
 			}
@@ -733,7 +733,7 @@ function Rule(element, config) {
 				var label = this.labels[i];
 				var pxPos = int((label.pos - origin) * scale);
 				if (pxPos >= 0 && pxPos <= pxLength) {
-					if (this.config.orientation == 'horizontal')
+					if (this.config.orientation === 'horizontal')
 						drawText(ctx, label.text, pxPos, element.height-2, { align: 'center', rotate: 0, font: font});
 					else
 						drawText(ctx, label.text, element.width-7, pxPos+3, { align: 'right', rotate: 0, font: font});
@@ -980,11 +980,11 @@ function clearSelection() {
 }
 
 function drawRect(context, x, y, width, height, alpha) {
-	if (typeof(alpha) == "undefined")
+	if (typeof(alpha) === "undefined")
 		alpha = 1;
 	var image = context.getImageData(x, y, width, height);
 	for (var i = 0, pos = 0; i < width*height; i++, pos += 4) {
-        if (i < width || i > width * (height - 1) || i % width == 0 || i % width == width - 1) 
+        if (i < width || i > width * (height - 1) || i % width === 0 || i % width === width - 1) 
             image.data[pos+3] = 60;
         else
             image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
@@ -996,11 +996,11 @@ function drawText(context, text, x, y, options) {
 	context.save();
 	if (options && (options.align || options.valign)) {
 		var metrics = context.measureText(text);
-		if (options.align == 'center')
+		if (options.align === 'center')
 			x -= metrics.width/2;
-		else if (options.align == 'right')
+		else if (options.align === 'right')
 			x -= metrics.width+1;
-		//if (options.valign == 'middle')
+		//if (options.valign === 'middle')
 		//	y -= metrics.height/2;
 	}
 	context.translate(x, y);
@@ -1027,7 +1027,7 @@ function drawText(context, text, x, y, options) {
 function measureText(text, bold, font, size) {
     // This global variable is used to cache repeated calls with the same arguments
     var str = text + ':' + bold + ':' + font + ':' + size;
-    if (typeof(__measuretext_cache__) == 'object' && __measuretext_cache__[str]) {
+    if (typeof(__measuretext_cache__) === 'object' && __measuretext_cache__[str]) {
         return __measuretext_cache__[str];
     }
 
@@ -1046,7 +1046,7 @@ function measureText(text, bold, font, size) {
     document.body.removeChild(div);
     
     // Add the sizes to the cache as adding DOM elements is costly and can cause slow downs
-    if (typeof(__measuretext_cache__) != 'object') {
+    if (typeof(__measuretext_cache__) !== 'object') {
         __measuretext_cache__ = [];
     }
     __measuretext_cache__[str] = size;
