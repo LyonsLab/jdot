@@ -3,13 +3,13 @@
 
 <div>
     Use the mouse wheel to zoom in/out, left button to pan within plot/axes, and shift+left button to select region in plot/axes.<br>
-    Number of points: <input id='num_points' size='15'>
-    <button onclick='setPoints();'>Run</button><br>
-    <button onclick='resetSize();'>Reset zoom</button><br>
-    <!--Type: <button id='type' onclick='toggleType();'>Points</button> -->
+    Number of points: <input id="num_points" size="15">
+    <button onclick="setPoints();">Run</button><br>
+    <button onclick="resetSize();">Reset zoom</button><br>
+    <!--Type: <button id="type" onclick="toggleType();">Points</button> -->
 </div>
 
-<div id='dotplot'></div>
+<div id="dotplot"></div>
 
 <script src="../src/dotplot2.js"></script>
 <script>
@@ -19,25 +19,25 @@ var fetchData = fetch_array;
 var gu1 = 2*1000*1000;
 var gu2 = 3*1000*1000;
 
-var dotplot = new DotPlot('dotplot', {
+var dotplot = new DotPlot("dotplot", {
     size: { width: 1000, height: 800 },
     genomes: [
-        {   name: 'test1',
+        {   name: "test1",
             length: gu1,
             chromosomes: [
-                { name: '1', length: 100000 },
-                { name: '2', length: 200000 },
-                { name: '3', length: 300000 },
-                { name: '4', length: 1400000 }
+                { name: "1", length: 100000 },
+                { name: "2", length: 200000 },
+                { name: "3", length: 300000 },
+                { name: "4", length: 1400000 }
             ],
         },
-        {   name: 'test2',
+        {   name: "test2",
             length: gu2,
             chromosomes: [
-                { name: 'a', length: 200000 },
-                { name: 'b', length: 250000 },
-                { name: 'c', length: 350000 },
-                { name: 'd', length: 2200000 }
+                { name: "a", length: 200000 },
+                { name: "b", length: 250000 },
+                { name: "c", length: 350000 },
+                { name: "d", length: 2200000 }
             ],
         }
     ],
@@ -73,9 +73,9 @@ function fetch_array(x, y, width, height) {
 
 function setPoints(n) {
     if (n)
-        document.getElementById('num_points').value = n;
+        document.getElementById("num_points").value = n;
     else
-        n = document.getElementById('num_points').value;
+        n = document.getElementById("num_points").value;
 
     initData(n);
     dotplot.redraw();
