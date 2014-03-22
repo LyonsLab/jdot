@@ -170,7 +170,7 @@ function DotPlot(id, config) {
         this.plot.zoom(0, 0, 0);
         this.xrule.zoom(0, 0, 0);
         this.yrule.zoom(0, 0, 0);
-    }
+    };
 
     this.constructor();
 }
@@ -443,7 +443,7 @@ function Drawable(element, config) {
             saveSelection(this.context, 0, y, this.config.size.width-1, height, 0.1);
             drawRect(this.context, 0, y, this.config.size.width-1, height, 0.1);
         }
-    }
+    };
 
     this.select = function(x1, y1, x2, y2) {
         x1 = constrainTo(x1, 0, this.config.size.width-1);
@@ -573,7 +573,7 @@ function Drawable(element, config) {
         ty = ty / this.scale.y;
         this.translate(tx, ty);
         this.redraw();
-    }
+    };
 
     this.translate = function translate(x, y) {
         //console.log("translate: x,y=" + x + "," + y + " origin=" + this.origin.x + "," + this.origin.y + " scale=" + this.scale.x + "," + this.scale.y + " w,h=" + this.view.width + "," + this.view.height);
@@ -599,7 +599,7 @@ function Drawable(element, config) {
         var minXScale = this.config.size.width / this.config.extent.width;
         var minYScale = this.config.size.height / this.config.extent.height;
         return (this.scale.x === minXScale && this.scale.y === minYScale);
-    }
+    };
 
     this.constructor();
 }
@@ -610,7 +610,7 @@ function Rule(element, config) {
         this.configure(config);
         this.drawable = new Drawable(element, config);
         this.drawable.setRenderer(this, this.redraw);
-    }
+    };
 
     this.configure = function(config) {
         this.config = config || {};
@@ -657,7 +657,7 @@ function Rule(element, config) {
 
     this.zoom = function(x, y, zoom, axis) {
         this.drawable.zoom(x, y, zoom, axis);
-    }
+    };
 
     this.highlight = function(x1, y1, x2, y2) {
         this.drawable.highlight(x1, y1, x2, y2);
@@ -665,11 +665,11 @@ function Rule(element, config) {
 
     this.select = function(x1, y1, x2, y2) {
         this.drawable.select(x1, y1, x2, y2);
-    }
+    };
 
     this.move = function(tx, ty) {
         this.drawable.move(tx, ty);
-    }
+    };
 
     this.drawTick = function(pos) {
         var ctx = this.drawable.context;
@@ -680,7 +680,7 @@ function Rule(element, config) {
         ctx.lineTo(x, element.height);
         ctx.stroke();
         drawText(ctx, toUnits(pos), x, element.height-13, { rotate: 45, font: "6pt Arial"});
-    }
+    };
 
     this.redraw = function() {
         var ctx = this.drawable.context;
@@ -740,7 +740,7 @@ function Rule(element, config) {
                 }
             }
         }
-    }
+    };
 
     this.constructor();
     this.drawable.redraw();
@@ -871,15 +871,15 @@ function Plot(element, config) {
 
     this.select = function(x1, y1, x2, y2) {
         this.drawable.select(x1, y1, x2, y2);
-    }
+    };
 
     this.zoom = function(x, y, zoom, axis) {
         this.drawable.zoom(x, y, zoom, axis);
-    }
+    };
 
     this.move = function(tx, ty) {
         this.drawable.move(tx, ty);
-    }
+    };
 
     this.setFetch = function(fetch) {
         this.fetch = fetch;
