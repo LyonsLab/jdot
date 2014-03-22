@@ -1025,6 +1025,8 @@ function drawText(context, text, x, y, options) {
 * @return array         A two element array of the width and height of the text
 */
 function measureText(text, bold, font, size) {
+    var new_size;
+
     // This global variable is used to cache repeated calls with the same arguments
     var str = text + ":" + bold + ":" + font + ":" + size;
     if (typeof(__measuretext_cache__) === "object" && __measuretext_cache__[str]) {
@@ -1041,7 +1043,7 @@ function measureText(text, bold, font, size) {
         div.style.fontSize = size + "pt";
     document.body.appendChild(div);
 
-    var size = [div.offsetWidth, div.offsetHeight];
+    new_size = [div.offsetWidth, div.offsetHeight];
 
     document.body.removeChild(div);
 
@@ -1049,9 +1051,9 @@ function measureText(text, bold, font, size) {
     if (typeof(__measuretext_cache__) !== "object") {
         __measuretext_cache__ = [];
     }
-    __measuretext_cache__[str] = size;
+    __measuretext_cache__[str] = new_size;
 
-    return size;
+    return new_size;
 }
 
 function applyProperties(element, properties) {
