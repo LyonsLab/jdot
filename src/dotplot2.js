@@ -683,7 +683,8 @@ function Rule(element, config) {
     };
 
     this.redraw = function() {
-        var ctx = this.drawable.context;
+        var ctx = this.drawable.context,
+            pxPos;
         this.drawable.clear();
 
         // Draw title
@@ -697,7 +698,7 @@ function Rule(element, config) {
 
         // Draw ruler tick marks/labels
         font = this.config.tickFontSize + "pt " + this.config.tickFontName;
-        ctx.lineWidth = .2;
+        ctx.lineWidth = 0.2;
         var pxLength, origin, view, scale;
         if (this.config.orientation === "horizontal") {
             pxLength = this.config.size.width;
@@ -714,7 +715,7 @@ function Rule(element, config) {
         var tick    = roundBase10(view / 10);
         var guStart = roundBase10(origin) + tick;
         var pxStart = scale + int(tick * scale);
-        for (var pxPos = pxStart, guPos = guStart; pxPos < pxLength-tick*scale/2; pxPos += tick*scale, guPos += tick) {
+        for (pxPos = pxStart, guPos = guStart; pxPos < pxLength-tick*scale/2; pxPos += tick*scale, guPos += tick) {
             if (this.config.orientation === "horizontal") {
                 drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
                 drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
@@ -731,7 +732,7 @@ function Rule(element, config) {
         if (this.labels) {
             for (var i = 0; i < this.labels.length; i++) {
                 var label = this.labels[i];
-                var pxPos = int((label.pos - origin) * scale);
+                pxPos = int((label.pos - origin) * scale);
                 if (pxPos >= 0 && pxPos <= pxLength) {
                     if (this.config.orientation === "horizontal")
                         drawText(ctx, label.text, pxPos, element.height-2, { align: "center", rotate: 0, font: font});
@@ -769,13 +770,14 @@ function Plot(element, config) {
     };
 
     this.drawLabels = function() {
-        var ctx = this.drawable.context;
+        var ctx = this.drawable.context,
+            i;
         //ctx.imageSmoothingEnabled = false;
 
         // X-axis
         ctx.lineWidth = 1 / this.drawable.scale.x / 2; // same size regardless of zoom
         var labels = this.config.labels.x;
-        for (var i = 0, x = 0; i < labels.length-1; i++) {
+        for (i = 0, x = 0; i < labels.length-1; i++) {
             x += labels[i].length;
             drawLine(ctx, x, 1, x, this.config.extent.height-1);
         }
@@ -783,7 +785,7 @@ function Plot(element, config) {
         // Y-axis
         labels = this.config.labels.y;
         ctx.lineWidth = 1 / this.drawable.scale.y / 2; // same size regardless of zoom
-        for (var i = 0, y = 0; i < labels.length-1; i++) {
+        for (i = 0, y = 0; i < labels.length-1; i++) {
             y += labels[i].length;
             drawLine(ctx, 1, y, this.config.extent.width-1, y);
         }
