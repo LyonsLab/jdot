@@ -106,6 +106,7 @@ function DotPlot(id, config) {
                     {   size: { width: plotWidth, height: ruleWidth }, //0 }, // zero height means auto-size
                         extent: { width: genome1.length, height: genome2.length },
                         orientation: "horizontal",
+                        direction: "increasing",
                         scaled: false,
                         title: ((!this.config.gridRow || this.config.gridRow === 0) ? genome1.name : ""),
                         labels: genome1.chromosomes,
@@ -125,6 +126,7 @@ function DotPlot(id, config) {
                     {   size: { width: ruleWidth /*0*/, height: plotHeight }, // zero width means auto-size
                         extent: { width: genome1.length, height: genome2.length },
                         orientation: "vertical",
+                        direction: (this.config.origin === "northwest" ? "increasing" : "decreasing" ),
                         scaled: false,
                         title: ((!this.config.gridCol || this.config.gridCol === 0) ? genome2.name : ""),
                         labels: genome2.chromosomes,
@@ -615,7 +617,8 @@ function Rule(element, config) {
     this.configure = function(config) {
         this.config = config || {};
 
-        this.config.orientation = this.config.orientation || "horizontal";
+        this.config.orientation = this.config.orientation || "horizontal"; // valid values are "horizontal" and "vertical"
+        this.config.direction   = this.config.direction   || "increasing"; // valid values are "increasing" and "descreasing"
 
         this.config.titleFontName = this.config.titleFontName || "Arial";
         this.config.titleFontSize = this.config.titleFontSize || 12;
@@ -624,15 +627,27 @@ function Rule(element, config) {
         this.config.tickFontName  = this.config.tickFontName  || "Arial";
         this.config.tickFontSize  = this.config.tickFontSize  || 6;
 
-        // Calculate label positions
+        // Calculate label positions using direction
         var maxLabelWidth = 0, maxLabelHeight = 0;
+        var isIncreasing = (this.config.direction === 'increasing');
         if (this.config.labels) {
             this.labels = [];
-            for (var i = 0, pos = 0; i < this.config.labels.length; i++) {
+            
+            var pos;
+            if (isIncreasing)
+            	pos = 0;
+            else // decreasing
+            	pos = this.config.labels.reduce(function (a, b) {
+            		return { length: a.length + b.length };
+            	}).length;
+            	
+            for (var i = 0; i < this.config.labels.length; i++) {
                 var label = this.config.labels[i];
-                pos += label.length/2;
+                var halfLength = label.length/2;
+                if (!isIncreasing) halfLength *= -1;
+                pos += halfLength;
                 this.labels.push({ pos: pos, text: label.name });
-                pos += label.length/2;
+                pos += halfLength;
 
                 // Find max label width and height
 //              var labelWidth = measureText(label.name, "", this.config.labelFontName, this.config.labelFontSize);
@@ -643,7 +658,7 @@ function Rule(element, config) {
         }
         //console.log("max " + maxLabelWidth + " " + maxLabelHeight);
 
-        // Auto-size if specified
+        // Auto-size if necessary
 //        if (!this.config.size.width)
 //          this.config.size.width = maxLabelWidth;
 //        if (!this.config.size.height)
@@ -685,6 +700,7 @@ function Rule(element, config) {
     this.redraw = function() {
         var ctx = this.drawable.context,
             pxPos;
+        
         this.drawable.clear();
 
         // Draw title
@@ -697,33 +713,43 @@ function Rule(element, config) {
         }
 
         // Draw ruler tick marks/labels
+        // FIXME this can be optimized further
         font = this.config.tickFontSize + "pt " + this.config.tickFontName;
         ctx.lineWidth = 0.2;
         var pxLength, origin, view, scale;
         if (this.config.orientation === "horizontal") {
             pxLength = this.config.size.width;
+            guLength = this.config.extent.width;
             origin   = this.drawable.origin.x;
             view     = this.drawable.view.width;
             scale    = this.drawable.scale.x;
         }
         else { // vertical
             pxLength = this.config.size.height;
+            guLength = this.config.extent.height;
             origin   = this.drawable.origin.y;
             view     = this.drawable.view.height;
             scale    = this.drawable.scale.y;
         }
+        
         var tick    = roundBase10(view / 10);
         var guStart = roundBase10(origin) + tick;
         var pxStart = scale + int(tick * scale);
-        for (pxPos = pxStart, guPos = guStart; pxPos < pxLength-tick*scale/2; pxPos += tick*scale, guPos += tick) {
-            if (this.config.orientation === "horizontal") {
-                drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
-                drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
-            }
-            else { // vertical
-                drawLine(ctx, element.width-11, pxPos, element.width, pxPos);
-                drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: font});
-            }
+        var numTicks = int(guLength / tick)-1;
+        if (this.config.direction === "decreasing") {
+        	pxStart = guLength * scale - pxStart;
+        	tick *= -1;
+        }
+        
+        for (pxPos = pxStart, guPos = guStart; numTicks > 0; numTicks--, pxPos += tick*scale, guPos += Math.abs(tick)) {
+        	if (this.config.orientation === "horizontal") {
+        		drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
+        		drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
+        	}
+        	else { // vertical
+        		drawLine(ctx, element.width-11, pxPos, element.width, pxPos);
+        		drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: font});
+        	}
         }
 
         // Draw labels
@@ -767,17 +793,18 @@ function Plot(element, config) {
         if (this.config.style) {
             applyStyles(this.element, this.config.style);
         }
+        
+        this.config.origin = this.config.origin || 'southwest'; // valid values are 'northwest' or 'southwest'
     };
 
     this.drawLabels = function() {
-        var ctx = this.drawable.context,
-            i;
+        var ctx = this.drawable.context;
         //ctx.imageSmoothingEnabled = false;
 
         // X-axis
         ctx.lineWidth = 1 / this.drawable.scale.x / 2; // same size regardless of zoom
         var labels = this.config.labels.x;
-        for (i = 0, x = 0; i < labels.length-1; i++) {
+        for (var i = 0, x = 0; i < labels.length-1; i++) {
             x += labels[i].length;
             drawLine(ctx, x, 1, x, this.config.extent.height-1);
         }
@@ -787,7 +814,10 @@ function Plot(element, config) {
         ctx.lineWidth = 1 / this.drawable.scale.y / 2; // same size regardless of zoom
         for (i = 0, y = 0; i < labels.length-1; i++) {
             y += labels[i].length;
-            drawLine(ctx, 1, y, this.config.extent.width-1, y);
+            var y2 = y;
+            if (this.config.origin === "southwest")
+            	y2 = this.config.extent.height - y;
+            drawLine(ctx, 1, y2, this.config.extent.width-1, y2);
         }
     };
 
@@ -795,8 +825,15 @@ function Plot(element, config) {
         if (!data) return;
 
         var ctx = this.drawable.context;
+        var flipY = (this.config.origin === "southwest");
+        var length = this.config.extent.height;
         for (var i = 0; i < data.length; i++) {
-            ctx.fillRect( data[i].x, data[i].y, 1000, 1000 );
+        	// Reflect y-axis if southwest origin
+        	var y = data[i].y;
+        	if (flipY)
+        		y = length - y;
+        	
+            ctx.fillRect( data[i].x, y, 1000, 1000 );
         }
     };
 
@@ -806,11 +843,22 @@ function Plot(element, config) {
         var ctx = this.drawable.context,
             scale = Math.max(this.drawable.scale.x, this.drawable.scale.y);
 
+        var flipY = (this.config.origin === "southwest");
+        var length = this.config.extent.height;
+        
         for (var i = 0; i < data.length; i++) {
+        	// Reflect y-axis if southwest origin
+        	var y1 = data[i].y1;
+        	var y2 = data[i].y2;
+        	if (flipY) {
+        		y1 = length - y1;
+        		y2 = length - y2;
+        	}
+        	
             ctx.lineWidth = 1 / scale;
             ctx.beginPath();
-            ctx.moveTo(data[i].x1, data[i].y1);
-            ctx.lineTo(data[i].x2, data[i].y2);
+            ctx.moveTo(data[i].x1, y1);
+            ctx.lineTo(data[i].x2, y2);
             ctx.stroke();
         }
     };
@@ -827,6 +875,12 @@ function Plot(element, config) {
             y = data[i][1];
             width = data[i][2];
             height = data[i][3];
+            
+        	// Reflect y-axis if southwest origin
+        	if (flipY) {
+        		y = length - y;
+        		height *= -1;
+        	}
 
             ctx.lineWidth = 2 / scalar;
             ctx.strokeRect(x, y, width, height);

@@ -4,7 +4,8 @@
 <div>
     Use the mouse wheel to zoom in/out, left button to pan within plot/axes, and shift+left button to select region in plot/axes.<br>
     Number of points: <input id="num_points" size="15">
-    <button onclick="setPoints();">Run</button><br>
+    <button onclick="setPoints();">Update</button><br>
+    Upload blast output: <input id='blast_upload' type="file" onchange="uploadBlast(this.files);"/><br>
     <button onclick="resetSize();">Reset zoom</button><br>
     <!--Type: <button id="type" onclick="toggleType();">Points</button> -->
 </div>
@@ -85,6 +86,22 @@ function resetSize() {
     if (dotplot) {
         dotplot.reset();
     }
+}
+
+function uploadBlast(files) {
+    var data = parseBlastFile(files[0]);
+    console.log('data:');
+    console.log(data);
+}
+
+function parseBlastFile(file) {
+    var file = files[0];
+    console.log(file);
+    var r = new FileReader();
+    r.readAsText(file);
+    
+    
+    
 }
 </script>
 
