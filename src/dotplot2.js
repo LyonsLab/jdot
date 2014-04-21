@@ -854,7 +854,11 @@ function Plot(element, config) {
         		y1 = length - y1;
         		y2 = length - y2;
         	}
-        	
+
+            if (data[i].color) {
+                ctx.strokeStyle = data[i].color;
+            }
+
             ctx.lineWidth = 1 / scale;
             ctx.beginPath();
             ctx.moveTo(data[i].x1, y1);
