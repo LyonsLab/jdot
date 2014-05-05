@@ -874,12 +874,15 @@ function Plot(element, config) {
             scalar = Math.max(this.drawable.scale.x, this.drawable.scale.y),
             x, y, width, height;
 
+        var flipY = (this.config.origin === "southwest");
+        var length = this.config.extent.height;
+
         for (var i = 0; i < data.length; i++) {
             x = data[i][0];
             y = data[i][1];
             width = data[i][2];
             height = data[i][3];
-            
+
         	// Reflect y-axis if southwest origin
         	if (flipY) {
         		y = length - y;
