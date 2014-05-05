@@ -632,15 +632,15 @@ function Rule(element, config) {
         var isIncreasing = (this.config.direction === 'increasing');
         if (this.config.labels) {
             this.labels = [];
-            
+
             var pos;
             if (isIncreasing)
-            	pos = 0;
+                pos = 0;
             else // decreasing
-            	pos = this.config.labels.reduce(function (a, b) {
-            		return { length: a.length + b.length };
-            	}).length;
-            	
+                pos = this.config.labels.reduce(function (a, b) {
+                    return { length: a.length + b.length };
+                }).length;
+
             for (var i = 0; i < this.config.labels.length; i++) {
                 var label = this.config.labels[i];
                 var halfLength = label.length/2;
@@ -700,7 +700,7 @@ function Rule(element, config) {
     this.redraw = function() {
         var ctx = this.drawable.context,
             pxPos;
-        
+
         this.drawable.clear();
 
         // Draw title
@@ -731,25 +731,25 @@ function Rule(element, config) {
             view     = this.drawable.view.height;
             scale    = this.drawable.scale.y;
         }
-        
+
         var tick    = roundBase10(view / 10);
         var guStart = roundBase10(origin) + tick;
         var pxStart = scale + int(tick * scale);
         var numTicks = int(guLength / tick)-1;
         if (this.config.direction === "decreasing") {
-        	pxStart = guLength * scale - pxStart;
-        	tick *= -1;
+            pxStart = guLength * scale - pxStart;
+            tick *= -1;
         }
-        
+
         for (pxPos = pxStart, guPos = guStart; numTicks > 0; numTicks--, pxPos += tick*scale, guPos += Math.abs(tick)) {
-        	if (this.config.orientation === "horizontal") {
-        		drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
-        		drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
-        	}
-        	else { // vertical
-        		drawLine(ctx, element.width-11, pxPos, element.width, pxPos);
-        		drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: font});
-        	}
+            if (this.config.orientation === "horizontal") {
+                drawLine(ctx, pxPos, element.height-11, pxPos, element.height);
+                drawText(ctx, toUnits(guPos), pxPos, element.height-13, { rotate: 45, font: font});
+            }
+            else { // vertical
+                drawLine(ctx, element.width-11, pxPos, element.width, pxPos);
+                drawText(ctx, toUnits(guPos), element.width-32, pxPos+20, { rotate: 45, font: font});
+            }
         }
 
         // Draw labels
@@ -793,7 +793,7 @@ function Plot(element, config) {
         if (this.config.style) {
             applyStyles(this.element, this.config.style);
         }
-        
+
         this.config.origin = this.config.origin || 'southwest'; // valid values are 'northwest' or 'southwest'
     };
 
@@ -816,7 +816,7 @@ function Plot(element, config) {
             y += labels[i].length;
             var y2 = y;
             if (this.config.origin === "southwest")
-            	y2 = this.config.extent.height - y;
+                y2 = this.config.extent.height - y;
             drawLine(ctx, 1, y2, this.config.extent.width-1, y2);
         }
     };
@@ -828,11 +828,11 @@ function Plot(element, config) {
         var flipY = (this.config.origin === "southwest");
         var length = this.config.extent.height;
         for (var i = 0; i < data.length; i++) {
-        	// Reflect y-axis if southwest origin
-        	var y = data[i].y;
-        	if (flipY)
-        		y = length - y;
-        	
+            // Reflect y-axis if southwest origin
+            var y = data[i].y;
+            if (flipY)
+                y = length - y;
+
             ctx.fillRect( data[i].x, y, 1000, 1000 );
         }
     };
@@ -845,15 +845,15 @@ function Plot(element, config) {
 
         var flipY = (this.config.origin === "southwest");
         var length = this.config.extent.height;
-        
+
         for (var i = 0; i < data.length; i++) {
-        	// Reflect y-axis if southwest origin
-        	var y1 = data[i].y1;
-        	var y2 = data[i].y2;
-        	if (flipY) {
-        		y1 = length - y1;
-        		y2 = length - y2;
-        	}
+            // Reflect y-axis if southwest origin
+            var y1 = data[i].y1;
+            var y2 = data[i].y2;
+            if (flipY) {
+                y1 = length - y1;
+                y2 = length - y2;
+            }
 
             if (data[i].color) {
                 ctx.strokeStyle = data[i].color;
@@ -883,11 +883,11 @@ function Plot(element, config) {
             width = data[i][2];
             height = data[i][3];
 
-        	// Reflect y-axis if southwest origin
-        	if (flipY) {
-        		y = length - y;
-        		height *= -1;
-        	}
+            // Reflect y-axis if southwest origin
+            if (flipY) {
+                y = length - y;
+                height *= -1;
+            }
 
             ctx.lineWidth = 2 / scalar;
             ctx.strokeRect(x, y, width, height);
