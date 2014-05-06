@@ -235,8 +235,8 @@ function Controller(drawables, config) {
         }
 
         this.drawables.forEach(function(d) {
-            if (d.config.orientation === "both")
-                d.move(tx, ty);
+            if (d.drag && d.config.orientation === "both")
+                d.drag(tx, ty);
         });
 
         //e.preventDefault();
@@ -255,9 +255,11 @@ function Controller(drawables, config) {
             return;
 
         this.drawables.forEach(function(d) {
-            if (d.config.orientation === selected.config.orientation
+            if (d.zoom && 
+            		(d.config.orientation === selected.config.orientation
                     || d.config.orientation === "both"
                     || selected.config.orientation === "both")
+               )
             {
                 d.zoom(mousex, mousey, zoom, selected.config.orientation);
             }
@@ -280,42 +282,53 @@ function Controller(drawables, config) {
     };
 
     this.onmousemove = function(e) {
-        if (!this.mouse.isDown || !this.mouse.target)
+        if (!this.mouse.target)
             return;
 
-        var selected = this._getDrawableById(this.mouse.target.id);
-        if (!selected)
-            return;
-
-        var loc = this.mouse.target.getBoundingClientRect();
-
-        if (this.mouse.shiftKey) {
-            var x1 = e.x - loc.left;
-            var y1 = e.y - loc.top;
-            var x2 = this.mouse.drag.x;
-            var y2 = this.mouse.drag.y;
-            //console.log("mousemove "+x1+" "+y1+" "+x2+" "+y2);
-
-            selected.highlight(x1, y1, x2, y2);
-        }
-        else {
-            var tx = (e.x - loc.left - this.mouse.drag.x) / this.config.dragSpeed;
-            var ty = (e.y - loc.top - this.mouse.drag.y) / this.config.dragSpeed;
-            //console.log("mousemove "+tx+" "+ty);
-
-            if (selected.config.orientation === "horizontal")
-                ty = 0;
-            else if (selected.config.orientation === "vertical")
-                tx = 0;
-
+        var x1 = e.x - loc.left;
+        var y1 = e.y - loc.top;
+        
+        if (!this.mouse.isDown) { // mouse move
             this.drawables.forEach(function(d) {
-                if (d.config.orientation === selected.config.orientation
-                        || d.config.orientation === "both"
-                        || selected.config.orientation === "both")
-                {
-                    d.move(tx, ty);
-                }
+                if (d.move)
+                    d.move(x1, y1);
             });
+        }
+        else { // move drag
+	        var selected = this._getDrawableById(this.mouse.target.id);
+	        if (!selected)
+	            return;
+	
+	        var loc = this.mouse.target.getBoundingClientRect();
+	
+	        if (this.mouse.shiftKey) {
+	            var x2 = this.mouse.drag.x;
+	            var y2 = this.mouse.drag.y;
+	            //console.log("mousemove "+x1+" "+y1+" "+x2+" "+y2);
+	
+	            selected.highlight(x1, y1, x2, y2);
+	        }
+	        else {
+	            var tx = (x1 - this.mouse.drag.x) / this.config.dragSpeed;
+	            var ty = (y1 - this.mouse.drag.y) / this.config.dragSpeed;
+	            //console.log("mousemove "+tx+" "+ty);
+	
+	            if (selected.config.orientation === "horizontal")
+	                ty = 0;
+	            else if (selected.config.orientation === "vertical")
+	                tx = 0;
+	
+	            this.drawables.forEach(function(d) {
+	                if (d.drag &&
+	                		(d.config.orientation === selected.config.orientation
+	                        || d.config.orientation === "both"
+	                        || selected.config.orientation === "both")
+	                   )
+	                {
+	                    d.drag(tx, ty);
+	                }
+	            });
+	        }
         }
     };
 
@@ -354,9 +367,11 @@ function Controller(drawables, config) {
                 }
 
                 this.drawables.forEach(function(d) {
-                    if (d.config.orientation === selected.config.orientation
+                    if (d.select &&
+                    		(d.config.orientation === selected.config.orientation
                             || d.config.orientation === "both"
                             || selected.config.orientation === "both")
+                       )
                     {
                         d.select(x1, y1, x2, y2);
                     }
@@ -567,7 +582,7 @@ function Drawable(element, config) {
         this.redraw();
     };
 
-    this.move = function(tx, ty) {
+    this.drag = function(tx, ty) {
         if (this.isMinScale()) return; // can"t move, zoomed-out all the way
         //console.log("move: " + tx + " " + ty);
 
@@ -682,8 +697,8 @@ function Rule(element, config) {
         this.drawable.select(x1, y1, x2, y2);
     };
 
-    this.move = function(tx, ty) {
-        this.drawable.move(tx, ty);
+    this.drag = function(tx, ty) {
+        this.drawable.drag(tx, ty);
     };
 
     this.drawTick = function(pos) {
@@ -940,8 +955,8 @@ function Plot(element, config) {
         this.drawable.zoom(x, y, zoom, axis);
     };
 
-    this.move = function(tx, ty) {
-        this.drawable.move(tx, ty);
+    this.drag = function(tx, ty) {
+        this.drawable.drag(tx, ty);
     };
 
     this.setFetch = function(fetch) {
