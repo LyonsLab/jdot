@@ -285,6 +285,7 @@ function Controller(drawables, config) {
         if (!this.mouse.target)
             return;
 
+        var loc = this.mouse.target.getBoundingClientRect();
         var x1 = e.x - loc.left;
         var y1 = e.y - loc.top;
         
@@ -298,8 +299,6 @@ function Controller(drawables, config) {
 	        var selected = this._getDrawableById(this.mouse.target.id);
 	        if (!selected)
 	            return;
-	
-	        var loc = this.mouse.target.getBoundingClientRect();
 	
 	        if (this.mouse.shiftKey) {
 	            var x2 = this.mouse.drag.x;
@@ -420,6 +419,11 @@ function Drawable(element, config) {
         this.renderer = func;
         this.scope = scope;
     };
+    
+    this.setSize = function(width, height) {
+    	this.element.width = width;
+    	this.element.height = height;
+    }
 
     this.clear = function() {
         this.context.clearRect(0, 0, this.config.extent.width, this.config.extent.height);
