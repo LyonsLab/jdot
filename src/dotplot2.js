@@ -525,6 +525,10 @@ function Drawable(element, config) {
     };
 
     this.zoom = function(x, y, zoom, axis) {
+        if (this.crosshairs) {
+            this.crosshairs.clear(this);
+        }
+
         //console.log("zoom: "+x+" "+y+" "+zoom);
         var xzoom, yzoom;
         xzoom = yzoom = zoom;
