@@ -1158,7 +1158,10 @@ function clearSelection() {
 function drawRect(context, x, y, width, height, alpha, colors, noBorder) {
     if (typeof(alpha) === "undefined")
         alpha = 1;
-    var image = context.getImageData(x, y, width, height);
+
+    //NOTE: parseInt required due to issues with getImageData
+    //      getting an incorrect selection
+    var image = context.getImageData(parseInt(x, 10), parseInt(y, 10), width, height);
     for (var i = 0, pos = 0; i < width*height; i++, pos += 4) {
         if (!noBorder && (i < width || i > width * (height - 1) || i % width === 0 || i % width === width - 1))
             image.data[pos+3] = 60;
