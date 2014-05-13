@@ -88,6 +88,7 @@ function DotPlot(id, config) {
                 extent: { width: genome1.length, height: genome2.length },
                 labels: { x: genome1.chromosomes, y: genome2.chromosomes },
                 scaled: true,
+                crosshairs: true,
                 fetchDataHandler: config.fetchDataHandler,
                 style: {
                     left: ruleWidth+"px",
@@ -255,10 +256,10 @@ function Controller(drawables, config) {
             return;
 
         this.drawables.forEach(function(d) {
-            if (d.zoom && 
-            		(d.config.orientation === selected.config.orientation
-                    || d.config.orientation === "both"
-                    || selected.config.orientation === "both")
+            if (d.zoom &&
+                (d.config.orientation === selected.config.orientation ||
+                     d.config.orientation === "both" ||
+                     selected.config.orientation === "both")
                )
             {
                 d.zoom(mousex, mousey, zoom, selected.config.orientation);
@@ -282,52 +283,62 @@ function Controller(drawables, config) {
     };
 
     this.onmousemove = function(e) {
+        var loc, x, y;
+
+        if (this.mouse.isDown) { // mouse move
+            return this.onmousedrag(e);
+        }
+
+        loc = e.srcElement.getBoundingClientRect();
+
+        x = e.x - loc.left;
+        y = e.y - loc.top;
+
+        this.drawables.forEach(function (d) {
+            if (d.hover)
+                d.hover(x, y);
+        });
+    };
+
+    this.onmousedrag = function(e) {
         if (!this.mouse.target)
             return;
 
         var loc = this.mouse.target.getBoundingClientRect();
         var x1 = e.x - loc.left;
         var y1 = e.y - loc.top;
-        
-        if (!this.mouse.isDown) { // mouse move
-            this.drawables.forEach(function(d) {
-                if (d.move)
-                    d.move(x1, y1);
-            });
+
+        var selected = this._getDrawableById(this.mouse.target.id);
+        if (!selected)
+            return;
+
+        if (this.mouse.shiftKey) {
+            var x2 = this.mouse.drag.x;
+            var y2 = this.mouse.drag.y;
+            //console.log("mousemove "+x1+" "+y1+" "+x2+" "+y2);
+
+            selected.highlight(x1, y1, x2, y2);
         }
-        else { // move drag
-	        var selected = this._getDrawableById(this.mouse.target.id);
-	        if (!selected)
-	            return;
-	
-	        if (this.mouse.shiftKey) {
-	            var x2 = this.mouse.drag.x;
-	            var y2 = this.mouse.drag.y;
-	            //console.log("mousemove "+x1+" "+y1+" "+x2+" "+y2);
-	
-	            selected.highlight(x1, y1, x2, y2);
-	        }
-	        else {
-	            var tx = (x1 - this.mouse.drag.x) / this.config.dragSpeed;
-	            var ty = (y1 - this.mouse.drag.y) / this.config.dragSpeed;
-	            //console.log("mousemove "+tx+" "+ty);
-	
-	            if (selected.config.orientation === "horizontal")
-	                ty = 0;
-	            else if (selected.config.orientation === "vertical")
-	                tx = 0;
-	
-	            this.drawables.forEach(function(d) {
-	                if (d.drag &&
-	                		(d.config.orientation === selected.config.orientation
-	                        || d.config.orientation === "both"
-	                        || selected.config.orientation === "both")
-	                   )
-	                {
-	                    d.drag(tx, ty);
-	                }
-	            });
-	        }
+        else {
+            var tx = (x1 - this.mouse.drag.x) / this.config.dragSpeed;
+            var ty = (y1 - this.mouse.drag.y) / this.config.dragSpeed;
+            //console.log("mousemove "+tx+" "+ty);
+
+            if (selected.config.orientation === "horizontal")
+                ty = 0;
+            else if (selected.config.orientation === "vertical")
+                tx = 0;
+
+            this.drawables.forEach(function(d) {
+                if (d.drag &&
+                        (d.config.orientation === selected.config.orientation
+                        || d.config.orientation === "both"
+                        || selected.config.orientation === "both")
+                    )
+                {
+                    d.drag(tx, ty);
+                }
+            });
         }
     };
 
@@ -395,6 +406,10 @@ function Drawable(element, config) {
             height: 50
         };
 
+        if (this.config.crosshairs) {
+            this.crosshairs = new Crosshairs();
+        }
+
         this.config.orientation = this.config.orientation || "both";
     };
 
@@ -446,8 +461,10 @@ function Drawable(element, config) {
             width = Math.abs(x1-x2)+1,
             height  = Math.abs(y1-y2)+1;
 
-        // Check for zero size
-        if (width === 0 || height === 0) return;
+
+        if (this.crosshairs) {
+            this.crosshairs.clear(this);
+        }
 
         if (!this.config.orientation || this.config.orientation === "both") {
             restoreSelection(this.context);
@@ -586,7 +603,17 @@ function Drawable(element, config) {
         this.redraw();
     };
 
+    this.hover = function(tx, ty) {
+        if (this.crosshairs) {
+            this.crosshairs.redraw(this, tx, ty);
+        }
+    };
+
     this.drag = function(tx, ty) {
+        if (this.crosshairs) {
+            this.crosshairs.clear(this);
+        }
+
         if (this.isMinScale()) return; // can"t move, zoomed-out all the way
         //console.log("move: " + tx + " " + ty);
 
@@ -620,6 +647,69 @@ function Drawable(element, config) {
         var minXScale = this.config.size.width / this.config.extent.width;
         var minYScale = this.config.size.height / this.config.extent.height;
         return (this.scale.x === minXScale && this.scale.y === minYScale);
+    };
+
+    this.constructor();
+}
+
+function Crosshairs(colors, width, alpha) {
+    this.constructor = function() {
+        this.styles = {
+            "colors": colors || (colors = [255, 0, 0]),
+            "alpha": alpha || (alpha = 1),
+            "lineWidth": width || (width = 1)
+        };
+
+        this.buffer = undefined;
+    };
+
+    // Saves the pixel buffer for the drawable
+    this._save = function(context, x, y, width, height) {
+        var lineWidth = this.styles.lineWidth;
+
+        this.buffer = {
+            verticalBuffer: context.getImageData(x, 0, lineWidth, height),
+            horizontalBuffer: context.getImageData(0, y, width, lineWidth),
+            previousX: x,
+            previousY: y
+        };
+    };
+
+    // Restores the pixel buffer to the drawable if required
+    this._restore = function(context) {
+        var buffer = this.buffer;
+
+        if (buffer !== undefined) {
+            // restore vertical line
+            context.putImageData(buffer.verticalBuffer, buffer.previousX, 0);
+
+            // restore horizontal line
+            context.putImageData(buffer.horizontalBuffer, 0, buffer.previousY);
+            this.buffer = undefined;
+        }
+    };
+
+    // Clear the stored buffer
+    this.clear = function(drawable) {
+        this._restore(drawable.context);
+    };
+
+    this.redraw = function(drawable, x, y) {
+        var context = drawable.context,
+            width = drawable.config.size.width,
+            height = drawable.config.size.height,
+            lineWidth = this.styles.lineWidth,
+            alpha = this.styles.alpha,
+            colors = this.styles.colors;
+
+        this._restore(context);
+        this._save(context, x, y, width, height);
+
+        //Draw the vertical line
+        drawRect(context, x, 0, lineWidth, height, alpha, colors, true);
+
+        //Draw the horizontal line
+        drawRect(context, 0, y, width, lineWidth, alpha, colors, true);
     };
 
     this.constructor();
@@ -955,6 +1045,10 @@ function Plot(element, config) {
         this.drawable.select(x1, y1, x2, y2);
     };
 
+    this.hover = function(tx, ty) {
+        this.drawable.hover(tx, ty);
+    };
+
     this.zoom = function(x, y, zoom, axis) {
         this.drawable.zoom(x, y, zoom, axis);
     };
@@ -1061,15 +1155,21 @@ function clearSelection() {
     this.selectionBuffer = undefined;
 }
 
-function drawRect(context, x, y, width, height, alpha) {
+function drawRect(context, x, y, width, height, alpha, colors, noBorder) {
     if (typeof(alpha) === "undefined")
         alpha = 1;
     var image = context.getImageData(x, y, width, height);
     for (var i = 0, pos = 0; i < width*height; i++, pos += 4) {
-        if (i < width || i > width * (height - 1) || i % width === 0 || i % width === width - 1)
+        if (!noBorder && (i < width || i > width * (height - 1) || i % width === 0 || i % width === width - 1))
             image.data[pos+3] = 60;
         else
             image.data[pos+3] = Math.max(image.data[pos+3],alpha * 255);
+
+        if (colors) {
+            image.data[pos] = colors[0];
+            image.data[pos+1] = colors[1];
+            image.data[pos+2] = colors[2];
+        }
     }
     context.putImageData(image, x, y);
 }
