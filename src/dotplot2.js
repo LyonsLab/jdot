@@ -295,8 +295,9 @@ function Controller(drawables, config) {
         y = e.y - loc.top;
 
         this.drawables.forEach(function (d) {
-            if (d.hover)
+            if (d.hover && d.element === e.srcElement) {
                 d.hover(x, y);
+            }
         });
     };
 
