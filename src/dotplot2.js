@@ -1116,7 +1116,7 @@ function roundPow10(n) {
 
 function roundBase10(n) {
     if (n === 0) return 0;
-    var acc = Math.pow(10, Math.floor(log10(n)));
+    var acc = Math.pow(10, Math.floor(log10(n + 1)));
     return Math.round(n / acc) * acc;
 }
 
