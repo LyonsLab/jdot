@@ -657,6 +657,39 @@ function Drawable(element, config) {
     this.constructor();
 }
 
+var Syndicator = {
+    routes: {},
+    subscribe: function(route, callback) {
+        var listeners = this.routes[route] || (this.routes[route] = []);
+
+        if (typeof callback === "function") {
+            listeners.push(callback);
+        }
+    },
+    unsubscribe: function(route, callback) {
+        var listeners = this.routes[route] || (this.routes[route] = []);
+
+        listeners.forEach(function(_callback, index) {
+            if (callback === _callback) {
+                listeners.splice(index, 1);
+            }
+        });
+    },
+    publish: function(route) {
+        var args, listeners;
+
+        args = slice.apply(arguments);
+        route = args.shift();
+        listeners = this.routes[route] || [];
+
+        if (listeners.length) {
+            listeners.forEach(function(callback) {
+                callback.apply(callback, args);
+            });
+        }
+    }
+};
+
 function Crosshairs(colors, width, alpha) {
     this.constructor = function() {
         this.styles = {
@@ -1246,6 +1279,26 @@ function measureText(text, bold, font, size) {
     return new_size;
 }
 
+function mixInto(target, source) {
+    var props = slice.apply(arguments);
+    target = props.shift();
+    source = props.shift();
+
+    if (props.length) {
+        for(var index = 0; index < props.length; index++) {
+            if (source.hasOwnProperty(props[index])) {
+                target[props[index]] = source[props[index]];
+            }
+        }
+    } else {
+        for(var prop in source) {
+            if (source.hasOwnProperty(prop)) {
+                target[prop] = source[prop];
+            }
+        }
+    }
+}
+
 function applyProperties(element, properties) {
     for (var prop in properties) {
         element[prop] = properties[prop];
@@ -1290,6 +1343,8 @@ function generateID() {
     return id++;
 }
 
+var slice = Array.prototype.slice;
+var toString = Object.prototype.toString;
 //Array.prototype.clipTo=(function(r2) {
 //    var r1 = Array.prototype.push;
 //    return function() {
