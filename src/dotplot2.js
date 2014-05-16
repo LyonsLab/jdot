@@ -1,4 +1,6 @@
 function MultiDotPlot(id, config) {
+    mixInto(this, Syndicator, "subscribe", "unsubscribe", "publish", "routes");
+
     this.constructor = function() {
         this.element = document.getElementById(id);
         if (!this.element) {
@@ -39,6 +41,8 @@ function MultiDotPlot(id, config) {
                 this.dotplots.push(dotplot);
             }
         }
+
+        this.controller.addListener("all", this.on.bind(this));
     };
 
     this.configure = function(config) {
@@ -54,6 +58,22 @@ function MultiDotPlot(id, config) {
         }
     };
 
+    this.on = function(event_type, event_data) {
+        var drawable = this.plot.drawable,
+            args = {};
+
+        args.target = event_data.target;
+
+        switch(event_type) {
+            case "select_point":
+                args.bounds = drawable.getBounds(event_data.x, event_data.y);
+                this.publish("/multidotplot/select_point", args);
+                break;
+            default:
+                break;
+        }
+    };
+
     this.redraw = function() {
         for (var i = 0; i < this.dotplots; i++) {
             this.dotplots[i].redraw();
@@ -64,6 +84,8 @@ function MultiDotPlot(id, config) {
 }
 
 function DotPlot(id, config) {
+    mixInto(this, Syndicator, "subscribe", "unsubscribe", "publish", "routes");
+
     this.constructor = function() {
         this.element = document.getElementById(id);
         if (!this.element) {
@@ -138,8 +160,26 @@ function DotPlot(id, config) {
                         }
                     }
                 );
+
+                this.controller.addListener("all", this.on.bind(this));
                 this.controller.addListener(this.yrule.drawable);
             }
+        }
+    };
+
+    this.on = function(event_type, event_data) {
+        var drawable = this.plot.drawable,
+            args = {};
+
+        args.target = event_data.target;
+
+        switch(event_type) {
+            case "select_point":
+                args.bounds = drawable.getBounds(event_data.x, event_data.y);
+                this.publish("/dotplot/select_point", args);
+                break;
+            default:
+                break;
         }
     };
 
@@ -198,6 +238,7 @@ function Controller(drawables, config) {
         document.onmousedown = function(e) { this.onmousedown.call(me, e); };
         document.onmouseup   = function(e) { this.onmouseup.call(me, e);   };
         document.onmousemove = function(e) { this.onmousemove.call(me, e); };
+        document.onclick = function (e) { this.onclick.call(me, e); };
 
         this.drawables = drawables || [];
         this.drawables.forEach(function(item) {
@@ -208,16 +249,24 @@ function Controller(drawables, config) {
         document.onkeydown = function(e) { this.onkeydown.call(me, e); };
     };
 
-    this.addListener = function(d) {
-        this.drawables.push(d);
+    this.addListener = function (listener, func) {
         var me = this;
-        d.element.onmousewheel = function(e) { this.onmousewheel.call(me, e); };
+        if (toString.apply(listener) === "[object Object]") {
+            listener.element.onmousewheel = function (e) {
+                this.onmousewheel.call(me, e);
+            };
+            this.drawables.push(listener);
+        } else {
+            var callback = {};
+            callback[listener] = func;
+            this.drawables.push(callback);
+        }
     };
 
     this._getDrawableById = function(id) {
         var found;
         this.drawables.some(function(d) {
-            if (d.element.id === id) {
+            if (d.element && d.element.id === id) {
                 found = d;
                 return true;
             }
@@ -341,6 +390,28 @@ function Controller(drawables, config) {
                 }
             });
         }
+    };
+
+    this.onclick = function (e) {
+        var loc, x, y;
+
+        loc = e.target.getBoundingClientRect();
+        x = e.x - loc.left;
+        y = e.y - loc.top;
+
+        this.drawables.forEach(function(d) {
+            if (d.select_point && e.target === d.element) {
+                d.select_point(x, y);
+            }
+
+            if (d.all) {
+                d.all("select_point", {
+                    target: e.target,
+                    x: x,
+                    y: y
+                });
+            }
+        })
     };
 
     this.onmouseup = function(e) {
@@ -525,6 +596,19 @@ function Drawable(element, config) {
         this.redraw();
     };
 
+    this.select_point = function(x, y) {
+        var bounds = [],
+            x1 = this.origin.x + (x - 1) / this.scale.x,
+            y1 = this.origin.y + (y - 1) / this.scale.y,
+            x2 = this.origin.x + (x + 1) / this.scale.x,
+            y2 = this.origin.y + (y + 1) / this.scale.y;
+
+        bounds.push([x1, y1]);
+        bounds.push([x1, y2]);
+        bounds.push([x2, y1]);
+        bounds.push([x2, y2]);
+    };
+
     this.zoom = function(x, y, zoom, axis) {
         if (this.crosshairs) {
             this.crosshairs.clear(this);
@@ -608,9 +692,9 @@ function Drawable(element, config) {
         this.redraw();
     };
 
-    this.hover = function(tx, ty) {
+    this.hover = function(x, y) {
         if (this.crosshairs) {
-            this.crosshairs.redraw(this, tx, ty);
+            this.crosshairs.redraw(this, x, y);
         }
     };
 
@@ -652,6 +736,32 @@ function Drawable(element, config) {
         var minXScale = this.config.size.width / this.config.extent.width;
         var minYScale = this.config.size.height / this.config.extent.height;
         return (this.scale.x === minXScale && this.scale.y === minYScale);
+    };
+
+    this.getBounds = function(x1, y1, x2, y2) {
+        var origin = this.origin,
+            scale = this.scale,
+            gx1, gx2, gy1, gy2,
+            bounds = [];
+
+        if (arguments.length > 2) {
+            gx1 = origin.x + x1 / scale.x;
+            gx2 = origin.x + x2 / scale.x;
+            gy1 = origin.y + y1 / scale.y;
+            gy2 = origin.y + y2 / scale.y;
+        } else {
+            gx1 = origin.x + (x1 - 1) / scale.x;
+            gx2 = origin.x + (x1 + 1) / scale.x;
+            gy1 = origin.y + (y1 - 1) / scale.y;
+            gy2 = origin.y + (y1 + 1) / scale.y;
+        }
+
+        bounds.push([gx1, gy1]);
+        bounds.push([gx1, gy2]);
+        bounds.push([gx2, gy1]);
+        bounds.push([gx2, gy2]);
+
+        return bounds;
     };
 
     this.constructor();
