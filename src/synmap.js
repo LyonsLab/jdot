@@ -74,7 +74,7 @@ function run_synmap(scheduled, regenerate){
     // console.log (org_name2, org_length2, seq_type2);
     if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
         ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
-        var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
+        var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other reyAxiss.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
             alert(message);
             $('#log_text').hide(0);
                 $('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
@@ -890,14 +890,14 @@ function checkRequestSize(url) {
             var keys,
                 type,
                 layer,
-                source,
-                reference;
+                yAxis,
+                xAxis;
 
             for(layer in json.layers) {
                 type = Object.keys(json.layers[layer].data)[0];
-                for (reference in json.layers[layer].data[type]) {
-                    for (source in json.layers[layer].data[type][reference]) {
-                        pairs.push([reference, source]);
+                for (xAxis in json.layers[layer].data[type]) {
+                    for (yAxis in json.layers[layer].data[type][xAxis]) {
+                        pairs.push([xAxis, yAxis]);
                     }
                 }
             }
@@ -908,8 +908,8 @@ function checkRequestSize(url) {
             builder.loadJSON(json);
             builder.setAxisMetric(metric);
             builder.setChromosomeSort(sort);
-            builder.setReference(keys[0]);
-            builder.setSource(keys[1]);
+            builder.setXAxis(keys[0]);
+            builder.setYAxis(keys[1]);
             data = builder.get();
 
             var handler =  function() {
@@ -1030,8 +1030,8 @@ function checkRequestSize(url) {
             layers = {},
             by = undefined,
             metric = "nucleotides",
-            source,
-            reference;
+            yAxis,
+            xAxis;
 
         my.setChromosomeSort = function(func) {
             by = func;
@@ -1041,12 +1041,12 @@ function checkRequestSize(url) {
             metric = new_metric;
         };
 
-        my.setSource = function(src) {
-            source = src;
-        }
+        my.setYAxis = function(y) {
+            yAxis = y;
+        };
 
-        my.setReference = function(ref) {
-            reference = ref;
+        my.setXAxis = function(x) {
+            xAxis = x;
         };
 
         my.addGenome = function(id, data) {
@@ -1075,8 +1075,8 @@ function checkRequestSize(url) {
                 xtotal,
                 ytotal,
                 new_layers,
-                genome1 = genomes[reference],
-                genome2 = genomes[source];
+                genome1 = genomes[xAxis],
+                genome2 = genomes[yAxis];
 
             // Check if we have any genomes
             if (genome1 === undefined || genome2 === undefined) {
@@ -1099,6 +1099,8 @@ function checkRequestSize(url) {
                 "ylabels": ylabels,
                 "xtotal": sum(xlabels.map(pick("length"))),
                 "ytotal": sum(ylabels.map(pick("length"))),
+                "xid": xAxis,
+                "yid": yAxis,
                 "layers": new_layers
             };
         };
@@ -1162,17 +1164,17 @@ function checkRequestSize(url) {
                 raw;
 
             if (layer.data.points) {
-                raw = layer.data.points[reference][source];
+                raw = layer.data.points[xAxis][yAxis];
                 points = transformBy(raw, xoffset, yoffset, xindex, yindex, transformPoint);
             }
 
             if (layer.data.lines) {
-                raw = layer.data.lines[reference][source]
+                raw = layer.data.lines[xAxis][yAxis]
                 lines = transformBy(raw, xoffset, yoffset, xindex, yindex, transformLine);
             }
 
             if (layer.data.rects) {
-                raw = layer.data.rects[reference][source];
+                raw = layer.data.rects[xAxis][yAxis];
                 rects = transformBy(raw, xoffset, yoffset, xindex, yindex, transformRect);
             }
 

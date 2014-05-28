@@ -1,12 +1,6 @@
 <html>
 <body>
 
-<div>
-    Number of points: <input id="num_points" size="15">
-    <button onclick="setPoints();">Run</button><br>
-    <!--Type: <button id="type" onclick="toggleType();">Points</button> -->
-</div>
-<br>
 <div id="multidotplot"></div>
 
 <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
@@ -21,81 +15,71 @@ dataURIs[0] = "https://geco.iplantcollaborative.org/CoGe/data/diags/7113/7114/ht
 dataURIs[1] = "https://geco.iplantcollaborative.org/CoGe/data/diags/7113/7118/html/master_7113_7118.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.json";
 
 var sortFunc = inverse(sortBy("name", compareAlphaNumeric));
-// var multiDotElem = $("#multidotplot");
-// var plotViewer;
-
-var dataArray = [];
 
 var plotBuilder = coge.synmap.PlotBuilder();
 
-var layerData, layerObjects, reference, source, plotData;
+var layerData, layerObjects, reference, source, plotData, data, multidotplot;
 
-var genomeBuffer = [];
+var dataArray = [];
+var genomesObj = {};
 
-function pushData(json) {
-
-    genomeBuffer.concat(json.genomes);
+function parseData(json) {
+    console.info("Called parseData");
 
     // Hacky way of getting the reference and source IDs
     layerData = _.values(json.layers)[0].data;
     layerObjects = _.values(layerData)[0];
-    reference = _.keys(layerObjects)[0];
-    source = _.keys(layerObjects[reference])[0];
+    xAxis = reference = _.keys(layerObjects)[0];
+    yAxis = source = _.keys(layerObjects[reference])[0];
     
     plotBuilder.loadJSON(json); // axisMetric is "nucleotides" by default
     plotBuilder.setChromosomeSort(sortFunc);
-    plotBuilder.setReference(reference);
-    plotBuilder.setSource(source);
+    plotBuilder.setXAxis(reference);
+    plotBuilder.setYAxis(source);
 
     plotData = plotBuilder.get();
 
-    if ( ! _.isArray(dataArray[reference]) ) dataArray[reference] = [];
+    if ( ! _.isArray(dataArray[xAxis]) ) dataArray[xAxis] = [];
 
-    console.log(plotData);
+    dataArray[xAxis][yAxis] = plotData;
 
-    dataArray[reference][source] = plotData;
-
-    newGenomes = [
-        {
+    if ( ! _.has(genomesObj, plotData.xid)) {
+        genomesObj[plotData.xid] = {
             name: plotData.xtitle,
             length: plotData.xtotal,
             chromosomes: plotData.xlabels
-        },
-        {
+        };
+    }
+
+    if ( ! _.has(genomesObj, plotData.yid)) {
+        genomesObj[plotData.yid] = {
             name: plotData.ytitle,
             length: plotData.ytotal,
             chromosomes: plotData.ylabels
-        }
-    ]
+        };
+    }
 
-    genomeBuffer = genomeBuffer.concat(newGenomes);
-
-    console.info("Called pushData");
-    // console.log(genomeBuffer);
 }
 
 /**
- * AJAX Requests populate genomeBuffer and dataArray.
+ * AJAX Requests populate genomeObj and dataArray.
  */
 
-var requests = dataURIs.map( function(uri) { return $.getJSON(uri, pushData); });
-
+var requests = dataURIs.map( function(uri) { return $.getJSON(uri, parseData); });
 var defer = $.when.apply($, requests);
-
-var data, multidotplot;
 
 defer.done(function() {
     console.info("AJAX requests resolved."); 
-    var genomeArray = _.uniq(genomeBuffer, false, function(each) { return each.name; })
-    // console.log(genomeArray);
-    // console.log(dataArray);
 
-    data = [{ lines: _.values( dataArray[7113][7114].layers.syntenic_pairs.lines ) }];
-    // console.log([data]);
+    // Specify what to show
+    genomesObj.xIds = [_.keys(genomesObj)[0]];
+    genomesObj.yIds = [_.keys(genomesObj)[1], _.keys(genomesObj)[2]];
+
+    console.log("genomesObj", genomesObj);
 
     multidotplot = new MultiDotPlot("multidotplot", {
         size: { width: 1000, height: 800 },
-        genomes: genomeArray,
+        genomes: genomesObj,
         fetchDataHandler: fetchHandler,
         style: {
             position: "relative"
@@ -107,104 +91,26 @@ defer.done(function() {
 
 /**
  * This function needs to return an array of objects with "lines," "rects," etc.
- * This is called for each plot. "Reference" and "Source" will be bound prior to the call.
+ * This is called for each plot. "xId" and "yId" will be bound prior to the call.
  */
-fetchHandler = function(reference, source) {
-    console.info("Called fetchHandler", reference, source);
-    // thisData = data[reference][source];
-    // thisData = dataArray[7113][7114].layers.syntenic_pairs
-    // console.log(data);
+fetchHandler = function(xId, yId) {
+
+    if ( ! dataArray[xId]) {
+        console.info("dataArray[" + xId + "]:", dataArray[xId]);
+        return([]);
+    } else if ( ! dataArray[xId][yId] ) {
+        console.info("dataArray[" + xId + "][" + yId + "]:", dataArray[xId][yId]);
+        return([]);
+    } else {
+        thisData = dataArray[xId][yId];
+    }
+
+    // TODO: More than just lines
+    data = [{ lines: _.values( thisData.layers.syntenic_pairs.lines ) }];
+
     return(data);
 }
 
-// var initData = init_array;
-// var fetchData = fetch_array;
-
-var genomes = [
-    {   name: "test1",
-        length: 2*1000*1000,
-        chromosomes: [
-            { name: "1", length: 100000 },
-            { name: "2", length: 500000 },
-            { name: "3", length: 300000 },
-            { name: "4", length: 1100000 }
-        ],
-    },
-    {   name: "test2",
-        length: 3*1000*1000,
-        chromosomes: [
-            { name: "a", length: 200000 },
-            { name: "b", length: 250000 },
-            { name: "c", length: 350000 },
-            { name: "d", length: 2200000 }
-        ],
-    },
-    {   name: "test3",
-        length: 2*1000*1000,
-        chromosomes: [
-            { name: "e", length: 1000000 },
-            { name: "f", length: 200000 },
-            { name: "g", length: 200000 },
-            { name: "h", length: 600000 }
-        ],
-    },
-    {   name: "test4",
-        length: 3*1000*1000,
-        chromosomes: [
-            { name: "w", length: 700000 },
-            { name: "x", length: 70000 },
-            { name: "y", length: 50000 },
-            { name: "z", length: 2180000 }
-        ],
-    }
-];
-
-// var multidotplot = new MultiDotPlot("multidotplot", {
-//     size: { width: 1000, height: 800 },
-//     genomes: genomes,
-//     fetchDataHandler: fetchData,
-//     style: {
-//         position: "relative"
-//     }
-// });
-
-
-
-// console.log(genomes);
-
-// var data;
-// setPoints(1*5000);
-
-// //------------------------------------------------------------------------------
-
-// function init_array(n) {
-//     // Generate some random data points
-//     data = [];
-//     for (var i=0; i < n; i++) {
-//         var x1 = Math.floor( Math.random() * 3*1000*1000 );
-//         var y1 = Math.floor( Math.random() * 3*1000*1000 );
-//         var x2 = x1 + Math.floor( Math.random() * 1000 );
-//         var y2 = y1 + Math.floor( Math.random() * 1000 );
-//         data.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
-//     }
-// }
-
-// function fetch_array(x, y, width, height) {
-//     var ret = [{ lines: data }];
-//     console.info("Called fetch_array");
-//     // console.log(ret);
-//     return ret;
-// }
-
-// function setPoints(n) {
-//     if (n)
-//         document.getElementById("num_points").value = n;
-//     else
-//         n = document.getElementById("num_points").value;
-
-//     initData(n);
-//     multidotplot.redraw();
-// }
 </script>
 
 </body>

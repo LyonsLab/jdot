@@ -12,37 +12,44 @@ function MultiDotPlot(id, config) {
 
         if (!this.config.genomes) {
             console.log("MultiDotPlot: no genomes specified");
+        } else {
+            var genomes = this.config.genomes;
         }
 
         this.controller = new Controller();
 
-        var numGenomes = this.config.genomes.length;
+        var numGenomes = genomes.xIds.length * genomes.yIds.length;
+        
         var dpPadding = 15;
         var dpWidth = config.size.width / numGenomes - dpPadding;
         var dpHeight = config.size.height / numGenomes - dpPadding;
-        
+
         this.dotplots = [];
 
-        for (var i = 0; i < numGenomes; i++) {
-            for (var j = 0;  j < numGenomes; j++) {
-                var div = createDiv(this.element, this.element.id+"_"+i+"_"+j);
-                var dotplot = new DotPlot(div.id, {
+        genomes.xIds.forEach(function(xId, xIndex) {
+            genomes.yIds.forEach(function(yId, yIndex) {
+                // console.log("dotplot for:", xId, yId);
+
+                var div = createDiv(this.element, this.element.id + "_" + xId + "_" + yId);
+                xAxis = genomes[xId];
+                yAxis = genomes[yId];
+                var dotPlot = new DotPlot(div.id, {
                     size: { width: dpWidth, height: dpHeight },
-                    genomes: [ this.config.genomes[i], this.config.genomes[j] ],
-                    fetchDataHandler: this.config.fetchDataHandler.bind(undefined, i, j),
+                    genomes: [ xAxis, yAxis ],
+                    fetchDataHandler: this.config.fetchDataHandler.bind(undefined, xId, yId),
                     controller: this.controller,
                     disableRulers: false,
-                    gridCol: i,
-                    gridRow: j,
+                    gridCol: xIndex,
+                    gridRow: yIndex,
                     style: {
-                        left: (i * dpWidth) + "px",
-                        top:  (j * dpHeight) + "px",
+                        left: (xIndex * dpWidth)  + "px",
+                        top:  (yIndex * dpHeight) + "px",
                         position: "relative"
                     }
                 });
-                this.dotplots.push(dotplot);
-            }
-        }
+                this.dotplots.push(dotPlot);
+            }, this)
+        }, this)
 
         this.controller.addListener("all", this.on.bind(this));
     };
