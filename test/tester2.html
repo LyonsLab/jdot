@@ -80,9 +80,9 @@ function init_array(n) {
 }
 
 function fetch_array(x, y, width, height) {
-    return [{
-        lines: data
-    }];
+    var ret = [{ lines: data }];
+    console.log(ret);
+    return ret;
 }
 
 function setPoints(n) {
@@ -98,5 +98,3 @@ function setPoints(n) {
 
 </body>
 </html>
-
-

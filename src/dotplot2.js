@@ -20,14 +20,16 @@ function MultiDotPlot(id, config) {
         var dpPadding = 15;
         var dpWidth = config.size.width / numGenomes - dpPadding;
         var dpHeight = config.size.height / numGenomes - dpPadding;
+        
         this.dotplots = [];
+
         for (var i = 0; i < numGenomes; i++) {
             for (var j = 0;  j < numGenomes; j++) {
                 var div = createDiv(this.element, this.element.id+"_"+i+"_"+j);
                 var dotplot = new DotPlot(div.id, {
                     size: { width: dpWidth, height: dpHeight },
                     genomes: [ this.config.genomes[i], this.config.genomes[j] ],
-                    fetchDataHandler: this.config.fetchDataHandler,
+                    fetchDataHandler: this.config.fetchDataHandler.bind(undefined, i, j),
                     controller: this.controller,
                     disableRulers: false,
                     gridCol: i,
