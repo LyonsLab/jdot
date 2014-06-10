@@ -18,13 +18,21 @@ function MultiDotPlot(id, config) {
 
         this.controller = new Controller();
 
-        var numGenomes = genomes.xIds.length * genomes.yIds.length;
+        // var numGenomes = genomes.xIds.length * genomes.yIds.length;
+
+        var numGenomesX = genomes.xIds.length;
+        var numGenomesY = genomes.yIds.length;
+        
+        // console.log("numGenomes", numGenomes);
+        // console.log("config.size.width", config.size.width);
         
         var dpPadding = 15;
-        var dpWidth = config.size.width / numGenomes - dpPadding;
-        var dpHeight = config.size.height / numGenomes - dpPadding;
+        var dpWidth = config.size.width / numGenomesX - dpPadding;
+        var dpHeight = config.size.height / numGenomesY - dpPadding;
 
         this.dotplots = [];
+
+        // this.shareController = true;
 
         genomes.xIds.forEach(function(xId, xIndex) {
             genomes.yIds.forEach(function(yId, yIndex) {
@@ -37,7 +45,7 @@ function MultiDotPlot(id, config) {
                     size: { width: dpWidth, height: dpHeight },
                     genomes: [ xAxis, yAxis ],
                     fetchDataHandler: this.config.fetchDataHandler.bind(undefined, xId, yId),
-                    controller: this.controller,
+                    // controller: this.controller,
                     disableRulers: false,
                     gridCol: xIndex,
                     gridRow: yIndex,
@@ -45,13 +53,17 @@ function MultiDotPlot(id, config) {
                         left: (xIndex * dpWidth)  + "px",
                         top:  (yIndex * dpHeight) + "px",
                         position: "relative"
-                    }
+                    },
+                    flipped: true
                 });
+
+                // if (shareController) dotPlot.controller = cont;
+                // console.log(dotPlot);
                 this.dotplots.push(dotPlot);
             }, this)
         }, this)
 
-        this.controller.addListener("all", this.on.bind(this));
+        // this.controller.addListener("all", this.on.bind(this));
     };
 
     this.configure = function(config) {
@@ -125,7 +137,8 @@ function DotPlot(id, config) {
                     left: ruleWidth+"px",
                     top:  ruleWidth+"px",
                     position: "absolute"
-                }
+                },
+                flipped: config.flipped
             }
         );
         this.controller.addListener(this.plot.drawable);
@@ -482,6 +495,8 @@ function Drawable(element, config) {
         this.config = config || {};
         this.selectionBuffer;
 
+        // console.log("Drawable config", this.config);
+
         this.config.size = this.config.size || {
             width: 800,
             height: 50
@@ -509,6 +524,34 @@ function Drawable(element, config) {
 
         if (this.config.scaled)
             this.context.scale(this.scale.x, this.scale.y);
+
+        if (this.config.flipped) {
+            var r = Math.PI * 2 / 4;
+            // this.context.rotate(r);
+            // this.context.transform( 1, 0, 0, -1, 0, 0);
+
+            var sin = Math.sin(r);
+            var cos = Math.cos(r);
+
+            // this.context.transform( 1, 0, 0, 1, 0, 0);
+            //this.context.transform(cos, sin, -sin, cos, 0, 0);
+            // this.context.transform( 1, 0, 0, -1, 0, 0);
+            
+            // this.context.setTransform(-1, 0, 0, -1, 100, 100);
+            // this.context.setTransform( 1, 0, 0, 1, 0, 0);
+            // console.log(this.context.width);
+
+            // this.context.save();
+            // this.context.rotate(r);
+            // this.context.restore();
+            // this.context.rotate(r);
+            // this.context.translate(0, this.config.extent.height / 2);
+            // this.context.rotate(-r);
+            // this.context.translate(0, 200000)
+            // this.context.translate(0, +this.config.extent.height);
+        }
+            
+        //     // this.context.translate();
     };
 
     this.setRenderer = function(scope, func) {
@@ -1051,6 +1094,7 @@ function Plot(element, config) {
         this.drawable = new Drawable(element, config);
         this.setFetch(config.fetchDataHandler);
         this.drawable.setRenderer(this, this.render);
+        this.dotScale = 1;
     };
 
     this.configure = function(config) {
@@ -1109,6 +1153,7 @@ function Plot(element, config) {
         var ctx = this.drawable.context,
             scale = Math.max(this.drawable.scale.x, this.drawable.scale.y);
 
+
         var flipY = (this.config.origin === "southwest");
         var length = this.config.extent.height;
 
@@ -1125,7 +1170,9 @@ function Plot(element, config) {
                 ctx.strokeStyle = data[i].color;
             }
 
-            ctx.lineWidth = 1 / scale;
+            // ctx.lineWidth = 1.001 / scale;
+            // ctx.lineWidth = this.dotScale / scale;
+            ctx.setLineWidth(this.dotScale / scale);
             ctx.beginPath();
             ctx.moveTo(data[i].x1, y1);
             ctx.lineTo(data[i].x2, y2);
@@ -1189,6 +1236,12 @@ function Plot(element, config) {
         this.drawBorder();
         //console.log("render time: " + (Date.now() - startTime));
     };
+
+    this.setDotScale = function(value) {
+        if (value > 0) {
+            this.dotScale = value;
+        }
+    }
 
     this.redraw = function() {
         this.drawable.redraw();
