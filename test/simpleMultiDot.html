@@ -23,6 +23,13 @@ var layerData, layerObjects, reference, source, plotData, data, multidotplot;
 var dataArray = [];
 var genomesObj = {};
 
+/**
+ * AJAX Requests populate genomeObj and dataArray.
+ */
+
+var requests = dataURIs.map( function(uri) { return $.getJSON(uri, parseData); });
+var defer = $.when.apply($, requests);
+
 function parseData(json) {
     console.info("Called parseData");
 
@@ -61,12 +68,7 @@ function parseData(json) {
 
 }
 
-/**
- * AJAX Requests populate genomeObj and dataArray.
- */
 
-var requests = dataURIs.map( function(uri) { return $.getJSON(uri, parseData); });
-var defer = $.when.apply($, requests);
 
 defer.done(function() {
     console.info("AJAX requests resolved."); 

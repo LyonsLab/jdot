@@ -3,67 +3,61 @@ function MultiDotPlot(id, config) {
 
     this.constructor = function() {
         this.element = document.getElementById(id);
-        if (!this.element) {
-            console.log("MultiDotPlot: error: id '"+id+"' not found");
+        if (! this.element) {
+            console.error("MultiDotPlot: error: element id '" + id + "' not found");
             return;
         }
 
         this.configure(config);
 
-        if (!this.config.genomes) {
-            console.log("MultiDotPlot: no genomes specified");
+        if (! this.config.genomes) {
+            console.error("MultiDotPlot: no genomes specified");
         } else {
             var genomes = this.config.genomes;
         }
 
         this.controller = new Controller();
 
-        // var numGenomes = genomes.xIds.length * genomes.yIds.length;
-
         var numGenomesX = genomes.xIds.length;
         var numGenomesY = genomes.yIds.length;
         
-        // console.log("numGenomes", numGenomes);
-        // console.log("config.size.width", config.size.width);
-        
         var dpPadding = 15;
-        var dpWidth = config.size.width / numGenomesX - dpPadding;
-        var dpHeight = config.size.height / numGenomesY - dpPadding;
+
+        this.dpWidth = config.size.width / numGenomesX - dpPadding;
+        this.dpHeight = config.size.height / numGenomesY - dpPadding;
 
         this.dotplots = [];
-
-        // this.shareController = true;
+        this.divs = [];
 
         genomes.xIds.forEach(function(xId, xIndex) {
             genomes.yIds.forEach(function(yId, yIndex) {
-                // console.log("dotplot for:", xId, yId);
 
                 var div = createDiv(this.element, this.element.id + "_" + xId + "_" + yId);
-                xAxis = genomes[xId];
-                yAxis = genomes[yId];
-                var dotPlot = new DotPlot(div.id, {
-                    size: { width: dpWidth, height: dpHeight },
-                    genomes: [ xAxis, yAxis ],
-                    fetchDataHandler: this.config.fetchDataHandler.bind(undefined, xId, yId),
-                    // controller: this.controller,
-                    disableRulers: false,
-                    gridCol: xIndex,
-                    gridRow: yIndex,
-                    style: {
-                        left: (xIndex * dpWidth)  + "px",
-                        top:  (yIndex * dpHeight) + "px",
-                        position: "relative"
-                    },
-                    flipped: true
+
+                this.divs.push({
+                    div: div, xId: xId, yId: yId, xIndex: xIndex, yIndex: yIndex
                 });
 
-                // if (shareController) dotPlot.controller = cont;
-                // console.log(dotPlot);
-                this.dotplots.push(dotPlot);
-            }, this)
-        }, this)
+                // if (! genomes[xId]) console.warn("No genome information for " + xId);
+                // if (! genomes[yId]) console.warn("No genome information for " + yId);
 
-        // this.controller.addListener("all", this.on.bind(this));
+                if ( (! genomes[xId]) || (! genomes[yId]) ) {
+                    console.warn("No genome data for " + xId + " and " + yId);
+                    // div.style.width = this.dpWidth;
+                    // div.style.height = this.dpHeight;
+                    div.style.left = xIndex * this.dpWidth;
+                    div.style.top = yIndex * this.dpHeight;
+                    div.style.position = "relative";
+                    div.textContent = "No data."
+                } else {
+                    var gen = [ genomes[xId], genomes[yId] ];
+                    this.makeDotPlot(xId, yId, gen);
+                }
+
+            }, this)
+        }, this);
+
+        this.controller.addListener("all", this.on.bind(this));
     };
 
     this.configure = function(config) {
@@ -77,6 +71,37 @@ function MultiDotPlot(id, config) {
         if (this.config.style) {
             applyStyles(this.element, this.config.style);
         }
+    };
+
+    this.makeDotPlot = function(xId, yId, genomes) {
+
+        var foundDivs = this.divs.filter(function(d) { return d.xId == xId && d.yId == yId });
+
+        var found = (foundDivs.length === 1) ? foundDivs[0] : console.error("makeDotPlot: Error finding div element");
+
+        found.div.textContent = "";
+
+        var dotPlot = new DotPlot(found.div.id, {
+            size: { width: this.dpWidth, height: this.dpHeight },
+            genomes: genomes,
+            fetchDataHandler: this.config.fetchDataHandler.bind(undefined, xId, yId),
+            // controller: this.controller,
+            controller: new Controller(),
+            disableRulers: false,
+            gridCol: found.xIndex,
+            gridRow: found.yIndex,
+            style: {
+                left: (found.xIndex * this.dpWidth)  + "px",
+                top:  (found.yIndex * this.dpHeight) + "px",
+                position: "relative"
+            },
+            allRulers: true
+        });
+
+//        found.div.innerHTML = "<img src='http://placekitten.com/g/" +
+//            Math.floor(Math.random() * this.dpWidth) + "/" + Math.floor(Math.random() * this.dpHeight) + "'>";
+
+        this.dotplots.push(dotPlot);
     };
 
     this.on = function(event_type, event_data) {
@@ -141,11 +166,11 @@ function DotPlot(id, config) {
                 flipped: config.flipped
             }
         );
-        this.controller.addListener(this.plot.drawable);
+        this.controller.addDrawable(this.plot.drawable);
 
         // Create X and Y rulers
         if (!config.disableRulers) {
-            if (!this.config.gridRow || this.config.gridRow === 0) {
+            if (this.config.allRulers || ! this.config.gridRow || this.config.gridRow === 0) {
                 this.xrule = new Rule(
                     createCanvas(this.element, "xrule"+generateID()),
                     {   size: { width: plotWidth, height: ruleWidth }, //0 }, // zero height means auto-size
@@ -162,10 +187,10 @@ function DotPlot(id, config) {
                         }
                     }
                 );
-                this.controller.addListener(this.xrule.drawable);
+                this.controller.addDrawable(this.xrule.drawable);
             }
 
-            if (!this.config.gridCol || this.config.gridCol === 0) {
+            if (this.config.allRulers || ! this.config.gridCol || this.config.gridCol === 0) {
                 this.yrule = new Rule(
                     createCanvas(this.element, "yrule"+generateID()),
                     {   size: { width: ruleWidth /*0*/, height: plotHeight }, // zero width means auto-size
@@ -184,7 +209,7 @@ function DotPlot(id, config) {
                 );
 
                 this.controller.addListener("all", this.on.bind(this));
-                this.controller.addListener(this.yrule.drawable);
+                this.controller.addDrawable(this.yrule.drawable);
             }
         }
     };
@@ -237,6 +262,10 @@ function DotPlot(id, config) {
         this.yrule.zoom(0, 0, 0);
     };
 
+    this.setLineWidthScale = function(scale) {
+        this.plot.lineWidthScale = scale;
+    };
+
     this.constructor();
 }
 
@@ -252,15 +281,19 @@ function Controller(drawables, config) {
             isDown: false,
             drag: {
                 x: 0,
-                y: 0
+                y: 0,
+                prevX: 0,
+                prevY: 0
             }
         };
 
-        var me = this;
-        document.onmousedown = function(e) { this.onmousedown.call(me, e); };
-        document.onmouseup   = function(e) { this.onmouseup.call(me, e);   };
-        document.onmousemove = function(e) { this.onmousemove.call(me, e); };
-        document.onclick = function (e) { this.onclick.call(me, e); };
+//        var me = this;
+//        document.onmousedown = function(e) { this.onmousedown.call(me, e); };
+//        document.onmouseup   = function(e) { this.onmouseup.call(me, e);   };
+//        document.onmousemove = function(e) { this.onmousemove.call(me, e); };
+//        document.onclick = function (e)` { this.onclick.call(me, e); };
+
+        document.addEventListener("mouseup", this.onmouseup.bind(this));
 
         this.drawables = drawables || [];
         this.drawables.forEach(function(item) {
@@ -268,15 +301,26 @@ function Controller(drawables, config) {
                 item.element.onmousewheel = function(e) { this.onmousewheel.call(me, e); };
         });
 
-        document.onkeydown = function(e) { this.onkeydown.call(me, e); };
+//        document.onkeydown = function(e) { this.onkeydown.call(me, e); };
+    };
+
+    this.addDrawable = function (drawable) {
+        drawable.element.onmousewheel = this.onmousewheel.bind(this);
+        drawable.element.onmousemove = this.onmousemove.bind(this);
+        drawable.element.onmousedown = this.onmousedown.bind(this);
+        drawable.element.onmouseup = this.onmouseup.bind(this);
+        drawable.element.onclick = this.onclick.bind(this);
+        drawable.element.onmouseout = this.onmouseout.bind(this);
+
+        this.drawables.push(drawable);
     };
 
     this.addListener = function (listener, func) {
         var me = this;
         if (toString.apply(listener) === "[object Object]") {
-            listener.element.onmousewheel = function (e) {
-                this.onmousewheel.call(me, e);
-            };
+            listener.element.onmousewheel = this.onmousewheel.bind(this);
+            listener.element.onmousemove = this.onmousemove.bind(this);
+
             this.drawables.push(listener);
         } else {
             var callback = {};
@@ -347,10 +391,11 @@ function Controller(drawables, config) {
 
         this.mouse.target = e.target;
         var loc = e.target.getBoundingClientRect();
-        this.mouse.drag.x = e.x - loc.left;
-        this.mouse.drag.y = e.y - loc.top;
+        this.mouse.drag.x = this.mouse.drag.prevX = e.x - loc.left;
+        this.mouse.drag.y = this.mouse.drag.prevY = e.y - loc.top;
         this.mouse.isDown = true;
         this.mouse.shiftKey = e.shiftKey;
+
     };
 
     this.onmousemove = function(e) {
@@ -372,9 +417,30 @@ function Controller(drawables, config) {
         });
     };
 
+    this.onmouseout = function(e) {
+        this.drawables.forEach(function (d) {
+            if (d.leave && d.element === e.srcElement) {
+                d.leave();
+            }
+        })
+    };
+
+    /**
+     * Where should this go?!
+     */
+    this.lastDrag = {x: 0, y: 0};
+
     this.onmousedrag = function(e) {
         if (!this.mouse.target)
             return;
+
+        /**
+         * this.mouse.drag is set at mousedown and doesn't change.
+         */
+
+        // console.log("event", e);
+
+        // console.log("this.lastDrag", this.lastDrag);
 
         var loc = this.mouse.target.getBoundingClientRect();
         var x1 = e.x - loc.left;
@@ -392,9 +458,16 @@ function Controller(drawables, config) {
             selected.highlight(x1, y1, x2, y2);
         }
         else {
-            var tx = (x1 - this.mouse.drag.x) / this.config.dragSpeed;
-            var ty = (y1 - this.mouse.drag.y) / this.config.dragSpeed;
-            //console.log("mousemove "+tx+" "+ty);
+
+            /**
+             * Translation is based on distance from previous drag event,
+             * not on distance from initial mousedown event!
+             */
+
+            var tx = (x1 - this.mouse.drag.prevX);
+            var ty = (y1 - this.mouse.drag.prevY);
+
+            // console.log("mousemove "+tx+" "+ty);
 
             if (selected.config.orientation === "horizontal")
                 ty = 0;
@@ -402,6 +475,7 @@ function Controller(drawables, config) {
                 tx = 0;
 
             this.drawables.forEach(function(d) {
+
                 if (d.drag &&
                         (d.config.orientation === selected.config.orientation
                         || d.config.orientation === "both"
@@ -412,6 +486,12 @@ function Controller(drawables, config) {
                 }
             });
         }
+
+        /**
+         * Important: Set prevX and prevY as current event coordinates
+         */
+        this.mouse.drag.prevX = x1;
+        this.mouse.drag.prevY = y1;
     };
 
     this.onclick = function (e) {
@@ -437,7 +517,6 @@ function Controller(drawables, config) {
     };
 
     this.onmouseup = function(e) {
-        //console.log("mouseup");
         //if (this.mouse.isDown) this.mouseClick(e);
         var isDown = this.mouse.isDown;
         this.mouse.isDown = false;
@@ -524,34 +603,6 @@ function Drawable(element, config) {
 
         if (this.config.scaled)
             this.context.scale(this.scale.x, this.scale.y);
-
-        if (this.config.flipped) {
-            var r = Math.PI * 2 / 4;
-            // this.context.rotate(r);
-            // this.context.transform( 1, 0, 0, -1, 0, 0);
-
-            var sin = Math.sin(r);
-            var cos = Math.cos(r);
-
-            // this.context.transform( 1, 0, 0, 1, 0, 0);
-            //this.context.transform(cos, sin, -sin, cos, 0, 0);
-            // this.context.transform( 1, 0, 0, -1, 0, 0);
-            
-            // this.context.setTransform(-1, 0, 0, -1, 100, 100);
-            // this.context.setTransform( 1, 0, 0, 1, 0, 0);
-            // console.log(this.context.width);
-
-            // this.context.save();
-            // this.context.rotate(r);
-            // this.context.restore();
-            // this.context.rotate(r);
-            // this.context.translate(0, this.config.extent.height / 2);
-            // this.context.rotate(-r);
-            // this.context.translate(0, 200000)
-            // this.context.translate(0, +this.config.extent.height);
-        }
-            
-        //     // this.context.translate();
     };
 
     this.setRenderer = function(scope, func) {
@@ -562,7 +613,7 @@ function Drawable(element, config) {
     this.setSize = function(width, height) {
     	this.element.width = width;
     	this.element.height = height;
-    }
+    };
 
     this.clear = function() {
         this.context.clearRect(0, 0, this.config.extent.width, this.config.extent.height);
@@ -750,6 +801,12 @@ function Drawable(element, config) {
         }
     };
 
+    this.leave = function() {
+        if (this.crosshairs) {
+            this.crosshairs.clear(this);
+        }
+    };
+
     this.drag = function(tx, ty) {
         if (this.crosshairs) {
             this.crosshairs.clear(this);
@@ -921,6 +978,8 @@ function Rule(element, config) {
         this.configure(config);
         this.drawable = new Drawable(element, config);
         this.drawable.setRenderer(this, this.redraw);
+
+        console.log(this);
     };
 
     this.configure = function(config) {
@@ -1086,7 +1145,7 @@ function Plot(element, config) {
     this.constructor = function() {
         this.element = element;
         if (!this.element) {
-            console.log("Plot: error: id '"+id+"' not found");
+            console.log("Plot: error: id '" + id + "' not found");
             return;
         }
 
@@ -1094,7 +1153,8 @@ function Plot(element, config) {
         this.drawable = new Drawable(element, config);
         this.setFetch(config.fetchDataHandler);
         this.drawable.setRenderer(this, this.render);
-        this.dotScale = 1;
+
+        this.lineWidthScale = 1;
     };
 
     this.configure = function(config) {
@@ -1153,29 +1213,47 @@ function Plot(element, config) {
         var ctx = this.drawable.context,
             scale = Math.max(this.drawable.scale.x, this.drawable.scale.y);
 
-
         var flipY = (this.config.origin === "southwest");
         var length = this.config.extent.height;
+        var minScaledLength = 0.2;
+        var minLength = Math.floor(minScaledLength / scale);
 
         for (var i = 0; i < data.length; i++) {
-            // Reflect y-axis if southwest origin
+
+            var x1 = data[i].x1;
+            var x2 = data[i].x2;
             var y1 = data[i].y1;
             var y2 = data[i].y2;
+
+            /** Reflect y-axis if southwest origin */
             if (flipY) {
                 y1 = length - y1;
                 y2 = length - y2;
+            }
+
+            var scaledLength = getLineLength(x1, x2, y1, y2) * scale;
+
+            /**
+             * Fix Chrome line-length bug. Force lines to be at least minLength long,
+             * scaled from midpoint of line.
+             */
+            if (scaledLength < minScaledLength) {
+                var mid = getMidPoint(x1, y1, x2, y2);
+                var theta = getTheta(x1, y1, x2, y2);
+                var p1 = addVector(mid[0], mid[1], theta, + minLength / 2);
+                var p2 = addVector(mid[0], mid[1], theta, - minLength / 2);
+                x1 = p1[0]; y1 = p1[1]; x2 = p2[0]; y2 = p2[1];
             }
 
             if (data[i].color) {
                 ctx.strokeStyle = data[i].color;
             }
 
-            // ctx.lineWidth = 1.001 / scale;
-            // ctx.lineWidth = this.dotScale / scale;
-            ctx.setLineWidth(this.dotScale / scale);
+            ctx.setLineWidth(this.lineWidthScale / scale);
+
             ctx.beginPath();
-            ctx.moveTo(data[i].x1, y1);
-            ctx.lineTo(data[i].x2, y2);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
             ctx.stroke();
         }
     };
@@ -1239,9 +1317,9 @@ function Plot(element, config) {
 
     this.setDotScale = function(value) {
         if (value > 0) {
-            this.dotScale = value;
+            this.lineWidthScale = value;
         }
-    }
+    };
 
     this.redraw = function() {
         this.drawable.redraw();
@@ -1329,9 +1407,8 @@ function int(floatvalue) {
     return Math.floor( floatvalue );
 }
 
-function drawLine(context, x1, y1, x2, y2, lineWidth) {
-    if (lineWidth)
-        context.lineWidth = lineWidth;
+function drawLine(context, x1, y1, x2, y2) {
+
     context.beginPath();
     context.moveTo(x1, y1);
     context.lineTo(x2, y2);
@@ -1517,6 +1594,30 @@ function generateID() {
 
 var slice = Array.prototype.slice;
 var toString = Object.prototype.toString;
+
+function addVector(x, y, theta, length) {
+    x += length * Math.cos(theta);
+    y += length * Math.sin(theta);
+
+    return [x, y];
+}
+
+function getTheta(from_x, from_y, to_x, to_y) {
+    var deltaY = to_y - from_y;
+    var deltaX = to_x - from_x;
+    return Math.atan2(deltaY, deltaX);
+}
+
+function getLineLength(x1, x2, y1, y2) {
+    return Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+}
+
+function getMidPoint(from_x, from_y, to_x, to_y) {
+    var x = (from_x + to_x) / 2;
+    var y = (from_y + to_y) / 2;
+    return [x, y];
+}
+
 //Array.prototype.clipTo=(function(r2) {
 //    var r1 = Array.prototype.push;
 //    return function() {
