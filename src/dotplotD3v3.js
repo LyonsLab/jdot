@@ -1,151 +1,195 @@
-function MultiDotPlot(id, config) {
-    var controls, dotplots;
+function MultiDotPlot(id) {
+    var size, genomeIds, fetchDataHandler, axisSizeRatio,
+        dotplots = [],
+        parentSel = d3.select("#" + id);
 
-    this.constructor = function() {
-        this.element = d3.select("#" + id);
-        var el = element();
+    var main = parentSel.append("main").classed("multiDot", true)
+        .style({ position: "relative", border: "1px solid black" });
 
-        if (el.empty()) {
-            console.error("MultiDotPlot: error: element id '" + id + "' not found");
-            return;
-        }
+    var controls = parentSel.insert("div", "main.multiDot").classed("controls", true)
+        .style("border", "1px solid black");
 
-        this.configure(config);
+    this.size = function(s) { if (! arguments.length) return size; size = s; return this; };
+    this.genomeIds = function(g) { if (! arguments.length) return genomeIds; genomeIds = g; return this; };
+    this.fetchDataHandler = function(f) { fetchDataHandler = f; return this; };
+    this.axisSizeRatio = function(a) { if (! arguments.length) return axisSizeRatio; axisSizeRatio = a; return this; };
 
-        if (! this.config.genomeIds)
-            console.error("MultiDotPlot: no genomes specified");
-        else
-            var genomeIds = this.config.genomeIds;
+    this.dotPlots = function() { return dotplots; };
 
+    this.build = function() {
+        /** We shouldn't really have to explicitly set the height for the main element,
+         * but for some reason it doesn't size correctly if we don't */
+        main.style({ width: size.width, height: size.height });
+
+        // FIXME: Remove all this and let the children figure it out.
         var numGenomesX = genomeIds.x.length;
         var numGenomesY = genomeIds.y.length;
-        
-        var dpPadding = 0;
 
-        this.dpWidth = config.size.width / numGenomesX - dpPadding;
-        this.dpHeight = config.size.height / numGenomesY - dpPadding;
+        this.dpWidth = size.width / numGenomesX;
+        this.dpHeight = size.height / numGenomesY;
 
-        this.dotplots = [];
+        dotplots = makeDotPlots.bind(this)();
+        setNeighbors();
 
-        controls = el.append("div")
-            .classed("controls", true)
-            .style({
-                width: this.config.size.width,
-                height: this.config.size.height * 0.10,
-                border: "1px solid black"
-            });
+        var controlFuncs = [toggleInnerControl]; // , toggleAllControl];
+        addControls(controlFuncs);
 
-        var main = el.append("main")
-            .style({
-                position: "relative",
-                width: this.config.size.width, height: this.config.size.height,
-                border: "1px solid black"
-            });
+        return this
+    };
 
-        console.groupCollapsed("Making DotPlots");
-
+    function makeDotPlots() {
+        var dps = [];
         genomeIds.x.forEach(function(xId, gridCol) {
             genomeIds.y.forEach(function(yId, gridRow) {
-
-                this.makeDotPlot(xId, yId, gridCol, gridRow, main);
-
+                var newPlot = makeDotPlot.bind(this)(xId, yId, gridCol, gridRow);
+                dps.push( newPlot );
             }, this)
         }, this);
-
-        dotplots = this.dotplots;
-
-        console.groupEnd("Making DotPlots");
-
-        this.positionAll();
-
-//        controls.append("button")
-//            .text("toggle All axes")
-//            .on("click", function() {
-//                var allOn = allAxesOn();
-//                dotplots.forEach(function(p) {
-//                    if (allOn) {
-//                        p.setAxis("x", "off"); p.setAxis("y", "off");
-//                    } else {
-//                        p.setAxis("x", "on"); p.setAxis("y", "on");
-//                    }
-//                });
-//                positionAll();
-//            });
-
-    };
-
-    function element() { return d3.select("#" + id) }
-
-    this.main = main;
-    function main() { return element().select("main") }
-
-    function allAxesOn() {
-        var allOn = true;
-        dotplots.forEach(function(p) {
-            var axis = p.axes();
-            if ((!axis.x.exists()) || (!axis.y.exists())) allOn = false;
-        });
-        return(allOn)
+        return dps
     }
 
-    this.makeDotPlot = function(xId, yId, gridCol, gridRow, parent) {
-
-        var dotPlot = new DotPlot({
-            parent: main(),
+    var my = this;
+    function makeDotPlot(xId, yId, gridCol, gridRow) {
+        return new DotPlot({
+            parent: main,
             genomeIds: { x: xId, y: yId },
-            gridPosition: { row: gridRow, column: gridCol },
-            size: { width: this.dpWidth, height: this.dpHeight },
-            axisSizeRatio: this.config.axisSizeRatio,
-            fetchDataHandler: this.config.fetchDataHandler.bind(undefined, xId, yId)
+            size: { width: my.dpWidth, height: my.dpHeight },
+            axisSizeRatio: axisSizeRatio,
+            fetchDataHandler: fetchDataHandler.bind(undefined, xId, yId)
         })
             .parent(this)
-            .axisSizeRatio(this.config.axisSizeRatio)
-            .makeFigure();
+            .genomeIds({ x: xId, y: yId })
+            .gridPosition({ row: gridRow, column: gridCol })
+            .build();
+    }
 
-        this.dotplots.push(dotPlot);
-    };
-
-    function positionAll() {
-        var anyMoved = false;
-        // console.log("dps", this.dotplots);
+    function setNeighbors() {
         dotplots.forEach(function(d) {
-            // console.log("d", d);
-            var grid = d.gridPosition,
+            var grid = d.gridPosition(),
                 row = grid.row, col = grid.column;
             var left = [row, col - 1]; var top = [row - 1, col];
-            var leftN = dotplots.filter(function(p) {
-                return p.gridPosition.row === left[0] && p.gridPosition.column === left[1]
+            var leftNeighbor = dotplots.filter(function(p) {
+                return p.gridPosition().row === left[0] && p.gridPosition().column === left[1]
             })[0];
-            var topN = dotplots.filter(function(p) {
-                return p.gridPosition.row === top[0] && p.gridPosition.column === top[1]
+            var topNeighbor = dotplots.filter(function(p) {
+                return p.gridPosition().row === top[0] && p.gridPosition().column === top[1]
             })[0];
-            if (leftN) d.setNeighbor("left", leftN);
-            if (topN) d.setNeighbor("top", topN);
-            var moved = d.positionToNeighbors();
-            if (moved === true) anyMoved = true;
-        });
-        // if (anyMoved) positionAll();
+            if (leftNeighbor) d.setNeighbor("left", leftNeighbor);
+            if (topNeighbor) d.setNeighbor("top", topNeighbor);
+        })
     }
+
+    function addControls(controlFuncs) {
+        controls.style({
+                width: size.width,
+                height: size.height * 0.10
+            });
+
+        controlFuncs.forEach(function(f) { f(controls); })
+    }
+
+    function toggleAllControl(controls) {
+        controls.append("button")
+            .text("Toggle All Axes")
+            .on("mousedown", function() {
+                var anyOn = dotplots.some(function(d) {
+                    var ax = d.axes();
+                    return ax.x.exists() || ax.y.exists();
+                });
+                dotplots.forEach(function(p) {
+                    if (anyOn) {
+                        p.setAxis("x", "off").setAxis("y", "off");
+                    } else {
+                        p.setAxis("x", "on").setAxis("y", "on");
+                    }
+                });
+                positionAll();
+            });
+    }
+
+    function toggleInnerControl(controls) {
+        controls.append("button")
+            .text("Toggle Inner Axes")
+            .on("mousedown", function() {
+                var innerOn = dotplots.some(function(d) {
+                    var grid = d.gridPosition();
+                    return grid.row !== 0 && d.axes()["x"].exists();
+                });
+                console.log(innerOn);
+                dotplots.forEach(function(d) {
+                    var grid = d.gridPosition(), ax = d.axes();
+                    if (innerOn) {
+                        d.setAxis("x", grid.row === 0 ? "on" : "off")
+                            .setAxis("y", grid.column === 0 ? "on" : "off");
+                    } else {
+                        d.setAxis("x", "on").setAxis("y", "on");
+                    }
+                });
+                positionAll();
+            })
+    }
+
     this.positionAll = positionAll;
-
-    this.configure = function(config) {
-        this.config = config || {};
-
-        this.config.size = this.config.size || { width: 800, height: 600 };
-
-        if (this.config.style) {
-            applyStyles(element(), this.config.style);
-        }
-    };
-
-    this.constructor();
+    function positionAll() {
+        var anyMoved = false;
+        dotplots.forEach(function(d) {
+            var oldPos = d.position();
+            var newPos = d.positionToNeighbors().position();
+            if (! _.isEqual(oldPos, newPos)) anyMoved = true;
+        });
+        if (anyMoved) positionAll();
+    }
 }
 
 function DotPlot(config) {
-    var _parent,
-        axisSizeRatio,
-        plot, extent, plotSize,
-        fetchDataHandler, // figure,
+    var parent,
+        genomeIds = {x: null, y: null},
+        gridPosition;
+
+    this.parent = function(p) { parent = p; return this };
+
+    this.genomeIds = function(g) { if (! arguments.length) return genomeIds; genomeIds = g; return this};
+    this.gridPosition = function(g) { if (! arguments.length) return gridPosition; gridPosition = g; return this};
+
+    this.build = function() {
+        console.log(parent.size());
+        console.log(parent.genomeIds());
+        console.log(parent.axisSizeRatio());
+
+        this.configure(config);
+
+        this.xId = this.config.genomeIds.x; this.yId = this.config.genomeIds.y;
+        fetchDataHandler = this.config.fetchDataHandler;
+
+        var axisSizeRatio = this.config.axisSizeRatio;
+
+        plotSize = {
+            width: this.config.size.width * (1 - axisSizeRatio.y),
+            height: this.config.size.height * (1 - axisSizeRatio.x)
+        };
+        var axisSize = {
+            x: this.config.size.height * axisSizeRatio.x,
+            y: this.config.size.width * axisSizeRatio.y
+        };
+
+        figure = this.makeFigure();
+
+        plot = new Plot().parent(this).size(plotSize).build(figure);
+        axes = {
+            x: new Axis().parent(this).coordinate("x").size(axisSize.x),
+            y: new Axis().parent(this).coordinate("y").size(axisSize.y)
+        };
+
+        return this;
+    };
+
+
+
+
+
+
+    var plot, extent, plotSize,
+        fetchDataHandler, figure,
         neighbors = [],
         axes,
         scale = {x: d3.scale.linear(), y: d3.scale.linear()},
@@ -153,30 +197,38 @@ function DotPlot(config) {
         hasData = false,
         chromosomes, chromeScale;
 
-    this.parent = parent;
-    function parent(p) {
-        if (! arguments.length) return _parent; _parent = p; return this;
-    }
-    this.axisSizeRatio = function(s) {
-        if (! arguments.length) return axisSizeRatio; axisSizeRatio = s; return this;
-    };
-//    this.size = function(s) {
-//        if (! arguments.length) return size; size = s; return this;
-//    };
-
     this.constructor = function() {
 
-        this.configure(config);
-
-        this.xId = this.config.genomeIds.x; this.yId = this.config.genomeIds.y;
-        this.gridPosition = this.config.gridPosition;
-        fetchDataHandler = this.config.fetchDataHandler;
+//        this.configure(config);
+//
+//        this.xId = this.config.genomeIds.x; this.yId = this.config.genomeIds.y;
+//        this.gridPosition = this.config.gridPosition;
+//        fetchDataHandler = this.config.fetchDataHandler;
+//
+//        var axisSizeRatio = this.config.axisSizeRatio;
+//
+//        plotSize = {
+//            width: this.config.size.width * (1 - axisSizeRatio.y),
+//            height: this.config.size.height * (1 - axisSizeRatio.x)
+//        };
+//        var axisSize = {
+//            x: this.config.size.height * axisSizeRatio.x,
+//            y: this.config.size.width * axisSizeRatio.y
+//        };
+//
+//        figure = this.makeFigure();
+//
+//        plot = new Plot().parent(this).size(plotSize).build(figure);
+//        axes = {
+//            x: new Axis().parent(this).coordinate("x").size(axisSize.x),
+//            y: new Axis().parent(this).coordinate("y").size(axisSize.y)
+//        };
     };
 
-//    this.redraw = function() {
-//        draw();
-//    };
-    this.redraw = draw;
+    this.redraw = function() {
+        draw();
+    };
+
     function draw() {
         if (typeof plot.quadtree() === "undefined") {
             // console.info("Quadtree not defined.");
@@ -217,6 +269,7 @@ function DotPlot(config) {
             .on("zoom", draw);
 
         plot.div().call(zoom);
+
         plot.extent(extent).scale(scale);
 
         hasData = true;
@@ -245,59 +298,35 @@ function DotPlot(config) {
         return {x: x, y: y};
     }
 
+    this.position = position;
     function position(side, value) {
-        var fig = figure();
         if (! arguments.length) {
-            var t = fig.style("top"), l = fig.style("left");
+            var t = figure.style("top"), l = figure.style("left");
             return {
                 top: t === "auto" ? 0 : parseInt(t),
                 left: l === "auto" ? 0 : parseInt(l)
             };
         }
-        value = parseInt(value);
-
-        var old = fig.style(side) === "auto" ? 0 : parseInt(fig.style(side));
-
-        fig.style(side, value + "px");
-
-        return old !== value
+        figure.style(side, parseInt(value) + "px");
     }
-    this.position = position;
 
     this.positionToNeighbors = function() {
-        var moved = false;
-        neighbors.forEach(function(n) {
-            // console.log("Positioning to %s", n.direction);
-            var dimension = n.direction === "top" ? "height" : "width";
-            var nSize = n.dotplot.divSize()[dimension];
-            var other = n.direction === "top" ? "left" : "top";
-            var nPos = n.dotplot.position();
-            moved = position(n.direction, nSize + nPos[n.direction]);
+        neighbors.forEach(function(neighbor) {
+            var dimension = neighbor.direction === "top" ? "height" : "width";
+            var neighborSize = neighbor.dotplot.divSize();
+            var neighborPos = neighbor.dotplot.position();
+            var value = neighborSize[dimension] + neighborPos[neighbor.direction];
+            position(neighbor.direction, value);
         });
-        return moved;
+        return this;
     };
     this.makeFigure = function() {
-        var figure = parent().main().append("figure")
+        var figure = this.config.parent.append("figure")
             .style({ margin: 0, position: "relative" });
 
-        plotSize = {
-            width: parent.dpWidth * (1 - axisSizeRatio.y),
-            height: parent.dpHeight * (1 - axisSizeRatio.x)
-        };
-
-        var axisSize = {
-            x: parent.dpHeight * axisSizeRatio.x,
-            y: parent.dpWidth * axisSizeRatio.y
-        };
-
-        plot = new Plot().parent(this).size(plotSize).build(figure);
-        axes = {
-            x: new Axis().parent(this).coordinate("x").size(axisSize.x),
-            y: new Axis().parent(this).coordinate("y").size(axisSize.y)
-        };
-
-        return this
+        return figure;
     };
+    // FIXME: Rename to axisState
     this.setAxis = function(a, state) {
         var exists = axes[a].exists();
         if (state === "on") {
@@ -310,8 +339,7 @@ function DotPlot(config) {
     };
     function toggleAxis(a) {
         if (! hasData) return;
-        var fig = figure();
-        var existing = fig.selectAll(".plot, .axis"),
+        var existing = figure.selectAll(".plot, .axis"),
             side = a === "x" ? "top" : "left",
             axis = axes[a];
 
@@ -325,7 +353,7 @@ function DotPlot(config) {
         if (axis.exists()) {
             axis.remove();
         } else {
-            axis.addTo(fig).attachZoom(zoom);
+            axis.addTo(figure).attachZoom(zoom);
         }
 
         return this;
@@ -335,8 +363,7 @@ function DotPlot(config) {
         toggleAxis("x"); toggleAxis("y");
     };
     this.scale = function() { return scale; };
-    this.figure = figure;
-    function figure() { return parent().main().select("figure"); }
+    this.figure = function() { return figure; };
     this.setNeighbor = function(direction, dotplot) {
         neighbors.push({direction: direction, dotplot: dotplot});
         return this;
@@ -402,11 +429,10 @@ function DotPlot(config) {
 
 function Plot() {
     var size, extent, scale, quadtree, context,
-        radius, div, _parent, svg;
+        radius, div, parent, svg;
 
     this.build = function() {
-        console.log(parent().figure());
-        div = parent().figure().append("div").classed("plot", true)
+        div = parent.figure().append("div").classed("plot", true)
             .style({
                 width: size.width, height: size.height,
                 position: "absolute", top: 0, left: 0
@@ -436,8 +462,8 @@ function Plot() {
         visitTree(quadtree);
         context.stroke();
 
-        if (parent().chromosomes()) {
-            var z = parent().zoom();
+        if (parent.chromosomes()) {
+            var z = parent.zoom();
             if (! z.on("zoom.chromos")) {
                 z.on("zoom.chromos", function() {
                     // console.log("zoom.chromos");
@@ -519,6 +545,7 @@ function Plot() {
     };
 
     this.makeTree = function(dat) {
+
         var dfd = $.Deferred();
 
         var q = d3.geom.quadtree()
@@ -551,14 +578,12 @@ function Plot() {
         return div;
     };
     function getDiv() {
-        return parent().figure().select(".plot");
+        return parent.figure().select(".plot");
     }
     this.getDiv = getDiv;
-
-    this.parent = parent;
-    function parent(p) {
-        if (!arguments.length) return _parent;
-        _parent = p;
+    this.parent = function(p) {
+        if (!arguments.length) return parent;
+        parent = p;
         return this;
     }
 }
@@ -671,6 +696,7 @@ function Axis() {
         size = s;
         return this;
     };
+    /** FIXME: Rename to "active"? */
     this.exists = function() {
         return ! getDiv().empty();
     }
